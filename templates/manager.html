@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urbano — Manager Dashboard</title>
+  <meta name="description" content="Urbano Manager Dashboard — Manage and assign city complaints." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    /* Sidebar inline styles */
+    .profile-edit-btn-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .profile-edit-btn-row .btn {
+      flex: 1;
+    }
+
+    #profile-edit-mode .form-control {
+      font-size: 0.85rem;
+      padding: 0.55rem 0.75rem;
+    }
+
+    #profile-edit-mode .form-group {
+      margin-bottom: 0.75rem;
+    }
+
+    #profile-edit-mode label {
+      font-size: 0.7rem;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      visibility: hidden;
+      opacity: 0;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-overlay.open {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      transform: translateY(-20px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.open .modal {
+      transform: translateY(0);
+    }
+    
+    .sidebar-section {
+      padding: 0 1.25rem;
+    }
+
+    .profile-section {
+      padding: 0 1.25rem 0.75rem;
+    }
+
+    .timeline { margin-top: 0.5rem; }
+    .timeline-item { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .timeline-dot-col { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); margin-top: 3px; flex-shrink: 0; }
+    .timeline-line { width: 2px; flex: 1; background: var(--green-light); margin-top: 3px; }
+    .timeline-item:last-child .timeline-line { display: none; }
+    .timeline-content { flex: 1; }
+    .timeline-action { font-size: 0.88rem; font-weight: 700; color: var(--text); display:flex; align-items:center; }
+    .timeline-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .timeline-note {
+      font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.35rem;
+      background: var(--bg); border-radius: 6px; padding: 0.5rem 0.7rem; line-height: 1.55;
+      border-left: 3px solid var(--green-light);
+    }
+.chat-window {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 400px;
+    height: 550px;
+    background: #e5ddd5;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9999;
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+.chat-window.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.chat-header {
+    background: #075e54;
+    color: white;
+    padding: 1rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chat-messages {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    background-color: #f0f4f8;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.chat-messages::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 250px;
+    background-image: url('/static/images/urbano-logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+}
+.chat-bubble {
+    z-index: 1;
+    position: relative;
+    max-width: 80%;
+    padding: 0.6rem 1rem;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+.chat-bubble.sent {
+    background: #dcf8c6;
+    color: #303030;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+.chat-bubble.received {
+    background: #ffffff;
+    color: #303030;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+.chat-input-area {
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 0.5rem;
+}
+.chat-input-area input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    outline: none;
+}
+.chat-input-area button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+}
+
+
+        /* Mobile Compatibility (Responsive Design) */
+    @media (max-width: 1024px) {
+      .sidebar { width: 70px; }
+      .logo-wordmark, .admin-badge, .nav-section-label, .nav-badge, .sidebar-footer, .server-pulse { display: none; }
+      .nav-item { justify-content: center; padding: 0.8rem 0; }
+      .nav-item span:not(.nav-icon) { display: none; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; flex-direction: row; align-items: center; justify-content: flex-start; padding: 0.5rem; overflow-x: auto; overflow-y: hidden; z-index: 50; }
+      .sidebar-nav { display: flex; flex-direction: row; padding: 0; width: max-content; }
+      .nav-item { padding: 0.5rem 1rem; border-radius: 999px; border: none; margin: 0 0.2rem; }
+      .logo-row { display: none; }
+      
+      .main { width: 100%; overflow-y: auto; }
+      .topbar { padding: 0.75rem 1rem; }
+      
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .table-wrap, .custom-table-container { overflow-x: auto; }
+      table { min-width: 600px; }
+      
+      .comms-grid, #comms-split { grid-template-columns: 1fr; display: flex; flex-direction: column; height: auto; }
+      .chat-panel, .chat-window { height: 500px; margin-top: 1rem; }
+      .chat-sidebar { max-height: 200px; border-right: none; border-bottom: 1px solid var(--border); }
+      .comp-tabs { overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
+    }
+    
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .page-head { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+    }
+</style>
+
+<style>
+@keyframes appEntry {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+body {
+    animation: appEntry 0.6s ease-out forwards;
+}
+
+  /* MODALS */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); display: none;
+    align-items: center; justify-content: center; z-index: 1000;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white; border-radius: 12px; padding: 2rem;
+    width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+    /* Mobile Compatibility */
+    @media (max-width: 768px) {
+      .sidebar { width: 60px !important; }
+      .sidebar-logo { display: none !important; }
+      .nav-icon { margin-right: 0 !important; }
+      .nav-item { padding: 0.8rem !important; justify-content: center !important; }
+      .nav-item span:not(.nav-icon) { display: none !important; }
+      .main { margin-left: 60px !important; width: calc(100% - 60px) !important; padding: 10px !important; }
+      .dashboard-grid, .grid { grid-template-columns: 1fr !important; }
+      .stat-card-row, .row { flex-direction: column !important; }
+      .custom-table { display: block !important; overflow-x: auto !important; white-space: nowrap !important; }
+      h2 { font-size: 1.5rem !important; }
+      .topbar { padding: 0 10px !important; }
+      .view { padding: 10px !important; }
+      .stats-grid { grid-template-columns: 1fr 1fr !important; }
+      .comp-tabs { overflow-x: auto !important; white-space: nowrap !important; }
+      .profile-card { flex-direction: column !important; }
+      #comms-split { flex-direction: column !important; }
+      .chat-window { height: 400px !important; }
+      .chat-sidebar { border-right: none !important; border-bottom: 1px solid var(--border) !important; max-height: 200px !important; }
+    }
+</style>
+
+
+    <!-- Leaflet JS & CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+let chatOpen = false;
+let chatPollTimer = null;
+
+function toggleChat() {
+    chatOpen = !chatOpen;
+    document.getElementById('chat-window').classList.toggle('open', chatOpen);
+    if(chatOpen) {
+        pollMessages();
+        chatPollTimer = setInterval(pollMessages, 3000);
+    } else {
+        clearInterval(chatPollTimer);
+    }
+}
+
+async function pollMessages() {
+    const id = sessionStorage.getItem('cc_manager_table_id');
+    if(!id) return;
+    try {
+        const res = await fetch(`/api/messages/fetch?role1=manager&id1=${id}&role2=admin&id2=1`);
+        const data = await res.json();
+        if(data.success) {
+            renderMessages(data.messages);
+        }
+    } catch(e) {}
+}
+
+function renderMessages(msgs) {
+    const container = document.getElementById('chat-messages');
+    if(!msgs.length) {
+        container.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:0.8rem;margin-top:auto;margin-bottom:auto;">Start a conversation with Admin.</div>';
+        return;
+    }
+    const html = msgs.map(m => {
+        const isMe = m.sender_role === 'manager';
+        return `<div class="chat-bubble ${isMe ? 'sent' : 'received'}">${m.content}</div>`;
+    }).join('');
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if(!msg) return;
+    const id = sessionStorage.getItem('cc_manager_table_id');
+    if(!id) return;
+    input.value = '';
+    
+    // Optimistic UI
+    const container = document.getElementById('chat-messages');
+    container.innerHTML += `<div class="chat-bubble sent" style="opacity:0.7">${msg}</div>`;
+    container.scrollTop = container.scrollHeight;
+    
+    await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            sender_role: 'manager', sender_id: id,
+            receiver_role: 'admin', receiver_id: 1,
+            content: msg
+        })
+    });
+    pollMessages();
+}
+
+</script>
+
+</head>
+
+<body>
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div id="toast-container"></div>
+
+  <!-- ===== EMAIL CHANGE MODAL ===== -->
+  <div id="email-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-title">Update Email Address</div>
+
+      <div id="email-modal-step1">
+        <p class="modal-subtitle">Enter your new email address. An OTP will be sent to verify it.</p>
+        <div class="form-group">
+          <label>New Email Address</label>
+          <input id="new-email-input" type="email" class="form-control" placeholder="new@email.com" autocomplete="off"
+            name="cc-new-email" />
+        </div>
+        <div id="email-modal-alert1" class="alert hidden"></div>
+        <div class="flex gap-1">
+          <button class="btn btn-primary" style="flex:1" onclick="requestEmailOtp()">Send OTP →</button>
+          <button class="btn btn-secondary" style="width:auto;flex:1" onclick="closeEmailModal()">Cancel</button>
+        </div>
+      </div>
+
+      <div id="email-modal-step2" class="hidden">
+        <p class="modal-subtitle" id="email-otp-hint">OTP sent! Enter the 6 digits below.</p>
+        <div class="otp-group" id="email-otp-group">
+          <input class="otp-digit" id="eotp0" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-digit" id="eotp1" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-digit" id="eotp2" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-digit" id="eotp3" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-digit" id="eotp4" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-digit" id="eotp5" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+        </div>
+        <div id="email-modal-alert2" class="alert hidden"></div>
+        <div class="flex gap-1">
+          <button class="btn btn-primary" style="flex:1" onclick="verifyEmailOtp()">Confirm →</button>
+          <button class="btn btn-secondary" style="flex:1" onclick="closeEmailModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DETAIL SIDE PANEL ===== -->
+  <div id="detail-overlay" class="detail-overlay" onclick="closeDetail(event)">
+    <div class="detail-panel" id="detail-panel">
+      <div class="detail-header">
+        <div>
+          <div id="detail-id" class="card-id" style="margin-bottom:0.3rem"></div>
+          <div id="detail-title" style="font-size:1rem;font-weight:800;color:var(--text);line-height:1.3"></div>
+        </div>
+        <button class="detail-close" onclick="closeDetail()">✕</button>
+      </div>
+
+      <div class="detail-body">
+        <!-- Complaint Info -->
+        <div class="detail-section">
+          <div class="detail-section-title">Complaint Details</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Status</div>
+              <div id="d-status" class="info-value"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">City</div>
+              <div id="d-city" class="info-value"></div>
+            </div>
+            <div class="info-item" style="grid-column:1/-1">
+              <div class="info-label">Address</div>
+              <div id="d-address" class="info-value"></div>
+            </div>
+            <div class="info-item" style="grid-column:1/-1">
+              <div class="info-label">Details</div>
+              <div id="d-details" class="info-value" style="white-space:pre-wrap;line-height:1.6"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Date Filed</div>
+              <div id="d-date" class="info-value"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Landmark</div>
+              <div id="d-landmark" class="info-value"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Assigned On</div>
+              <div id="d-assigned-on" class="info-value"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Department</div>
+              <div id="d-dept" class="info-value"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Info -->
+        <div class="detail-section">
+          <div class="detail-section-title">Filed By</div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Name</div>
+              <div id="d-user-name" class="info-value"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Email</div>
+              <div id="d-user-email" class="info-value"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Mobile</div>
+              <div id="d-user-mobile" class="info-value"></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Address</div>
+              <div id="d-user-address" class="info-value"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map Section -->
+        <div class="detail-section">
+          <div class="detail-section-title">Location Map</div>
+          <div style="font-size: 0.85rem; margin-bottom: 0.5rem; color: #64748b;">
+            Lat: <span id="mc-lat" style="font-weight: 600;">--</span>, 
+            Lng: <span id="mc-lng" style="font-weight: 600;">--</span>
+          </div>
+          <div id="mc-map-container" style="height: 200px; border-radius: 8px; border: 1px solid #e2e8f0; display: none;"></div>
+          <div id="mc-map-error" style="display: none; padding: 1rem; text-align: center; color: #64748b; border: 1px dashed #cbd5e1; border-radius: 8px;">
+            Location not provided for this complaint.
+          </div>
+        </div>
+
+        <!-- Media -->
+        <div class="detail-section">
+          <div class="detail-section-title">Attached Media</div>
+          <div id="d-media" class="media-preview"></div>
+        </div>
+
+        <!-- Assignment Form -->
+        <div id="assign-section" class="detail-section">
+          <div class="detail-section-title">Assign to Department</div>
+          <div class="assign-form">
+            <div class="assign-form-title">📋 Assign this Complaint</div>
+            <div id="assign-alert" class="alert hidden"></div>
+            <div class="form-group">
+              <label>Select Department</label>
+              <select id="dept-select" class="form-control">
+                <option value="">Loading departments…</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Dispatch Note</label>
+              <textarea id="assign-note" class="form-control" rows="3" autocomplete="off" name="cc-dispatch-note"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="submitAssignment()">✓ Assign Complaint</button>
+          </div>
+        </div>
+
+        <!-- Already assigned — shows dept details + current status -->
+        <div id="already-assigned-section" class="detail-section hidden">
+          <div class="detail-section-title">Assignment Details</div>
+          <div style="background:#f0faf8;border:1.5px solid #cde6e6;border-radius:10px;padding:1rem 1.1rem;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem;">
+              <div>
+                <div
+                  style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">
+                  Assigned To</div>
+                <div id="aa-dept-name" style="font-size:0.95rem;font-weight:700;color:#1e3535;">—</div>
+              </div>
+              <div>
+                <div
+                  style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">
+                  Current Status</div>
+                <div id="aa-status-badge">—</div>
+              </div>
+              <div>
+                <div
+                  style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">
+                  Assigned On</div>
+                <div id="aa-assigned-date" style="font-size:0.85rem;font-weight:600;color:#1e3535;">—</div>
+              </div>
+              <div>
+                <div
+                  style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">
+                  Dept Contact</div>
+                <div id="aa-dept-contact" style="font-size:0.85rem;font-weight:600;color:#1e3535;">—</div>
+              </div>
+            </div>
+            <div id="aa-latest-note-wrap" style="margin-top:0.85rem;display:none;">
+              <div
+                style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.35rem;">
+                Latest Update from Department</div>
+              <div id="aa-latest-note"
+                style="font-size:0.85rem;color:#2a5050;background:#fff;border:1px solid #cde6e6;border-radius:8px;padding:0.65rem 0.85rem;line-height:1.6;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Timeline -->
+        <div class="detail-section" id="timeline-section">
+          <div class="detail-section-title">Status History</div>
+          <div class="timeline" id="d-timeline"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD LAYOUT ===== -->
+  <div class="dashboard-layout">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <img src="/static/images/urbano-logo.png" alt="Urbano"
+            style="width:32px;height:32px;object-fit:contain;border-radius:8px;" />
+          <div>
+            <div class="brand-name">URBANO</div>
+            <div class="brand-role">Manager Portal</div>
+          </div>
+        </div>
+
+        <!-- Profile mini card -->
+        <div class="profile-section">
+          <div class="profile-card" onclick="toggleProfilePanel()" title="Click to view/edit profile">
+            <div class="profile-avatar" id="sidebar-avatar">M</div>
+            <div>
+              <div class="profile-name" id="sidebar-name">Loading…</div>
+              <div class="profile-role-label">City Manager</div>
+              <div class="profile-id-label font-mono" id="sidebar-mgr-id">—</div>
+            </div>
+            <span style="margin-left:auto;color:var(--text-muted);font-size:0.7rem" id="profile-toggle-icon">▾</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expandable profile -->
+      <div id="profile-expanded" class="sidebar-profile-expanded">
+
+        <!-- VIEW MODE -->
+        <div id="profile-view-mode">
+          <div class="profile-form-field"><label>Full Name</label>
+            <div class="view-val" id="pv-name">—</div>
+          </div>
+          <div class="profile-form-field"><label>Email</label>
+            <div class="view-val" id="pv-email">—</div>
+          </div>
+          <div class="profile-form-field">
+            <label>Manager ID</label>
+            <div class="locked-field"><span id="pv-mgr-id">—</span><span class="lock-icon">🔒</span></div>
+          </div>
+          <div class="profile-form-field"><label>Mobile Number</label>
+            <div class="view-val" id="pv-mobile">—</div>
+          </div>
+          <div class="profile-form-field"><label>Date of Birth</label>
+            <div class="view-val" id="pv-dob">—</div>
+          </div>
+          <div class="profile-form-field"><label>Age</label>
+            <div class="view-val" id="pv-age">—</div>
+          </div>
+          <div class="profile-form-field"><label>Gender</label>
+            <div class="view-val" id="pv-gender">—</div>
+          </div>
+          <div class="profile-form-field"><label>Address</label>
+            <div class="view-val" id="pv-address">—</div>
+          </div>
+          <div class="profile-form-field">
+            <label>Assigned City</label>
+            <div class="locked-field"><span id="pv-city">—</span><span class="lock-icon">🔒</span></div>
+          </div>
+          <div class="profile-edit-btn-row">
+            <button class="btn btn-ghost btn-sm" onclick="enableProfileEdit()">✏️ Edit</button>
+            <button class="btn btn-ghost btn-sm" onclick="openEmailModal()">📧 Email</button>
+          </div>
+        </div>
+
+        <!-- EDIT MODE -->
+        <div id="profile-edit-mode" class="hidden">
+          <div id="profile-edit-alert" class="alert hidden"></div>
+          <div class="form-group"><label>Full Name</label><input id="pe-name" class="form-control" type="text"
+              autocomplete="off" name="cc-pe-name" /></div>
+          <div class="form-group"><label>Mobile Number</label><input id="pe-mobile" class="form-control" type="tel"
+              autocomplete="off" name="cc-pe-mobile" /></div>
+          <div class="form-group"><label>Date of Birth</label><input id="pe-dob" class="form-control" type="date" />
+          </div>
+          <div class="form-group"><label>Age</label><input id="pe-age" class="form-control" type="number" min="18"
+              max="80" autocomplete="off" name="cc-pe-age" /></div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="pe-gender" class="form-control">
+              <option value="">Select…</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Address</label><textarea id="pe-address" class="form-control" rows="2"
+              autocomplete="off" name="cc-pe-address"></textarea></div>
+          <div class="form-group">
+            <label>Manager ID <span style="color:var(--text-muted);font-size:0.68rem">(auto-assigned)</span></label>
+            <input class="form-control" type="text" disabled id="pe-mgr-id" />
+          </div>
+          <div class="form-group">
+            <label>Assigned City <span style="color:var(--text-muted);font-size:0.68rem">(set by admin)</span></label>
+            <input class="form-control" type="text" disabled id="pe-city" />
+          </div>
+          <div class="flex gap-1">
+            <button class="btn btn-primary btn-sm" style="flex:1" onclick="saveProfile()">Save Changes</button>
+            <button class="btn btn-secondary btn-sm" style="flex:1" onclick="cancelProfileEdit()">Cancel</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Navigation -->
+      <div class="sidebar-nav-section">
+        <div class="sidebar-nav-label">Navigation</div>
+        <nav>
+          <a class="nav-item active" id="nav-home" onclick="showView('home')">
+            <span class="nav-icon">📋</span>
+            <span>Unassigned Complaints</span>
+            <span class="nav-badge" id="badge-home">0</span>
+          </a>
+          <a class="nav-item" id="nav-assigned" onclick="showView('assigned')">
+            <span class="nav-icon">📁</span>
+            <span>Assigned Complaints</span>
+          </a>
+          <a class="nav-item" id="nav-returns" onclick="showView('returns')">
+            <span class="nav-icon">↩️</span>
+            <span>Return Requests</span>
+            <span class="nav-badge" id="badge-returns" style="background:#dc2626;">0</span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-sm w-full" style="margin-bottom:0.75rem; background:var(--primary); color:white; border:none;" onclick="toggleChat()">💬 Admin Support</button>
+        <button class="btn btn-secondary btn-sm w-full" style="margin-bottom:0.75rem;" onclick="logout()">🚪 Logout</button>
+        <div style="font-size:0.72rem;color:var(--text-muted);text-align:center">Urbano Manager v1.0</div>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="main-content">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title" id="topbar-title">Dashboard</div>
+          <div class="topbar-subtitle" id="topbar-subtitle">Loading your data…</div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary btn-sm" onclick="refreshCurrentView()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="content-area">
+
+        <!-- PENDING APPROVAL -->
+        <div id="view-pending" class="view active">
+          <div class="pending-state">
+            <div class="pending-icon">⏳</div>
+            <h2>Awaiting Admin Approval</h2>
+          </div>
+        </div>
+
+        <!-- HOME: Unassigned Complaints -->
+        <div id="view-home" class="view">
+          <div class="section-header-row">
+            <h2 class="section-title">
+              Unassigned Complaints
+              <span id="home-count-pill" class="count-pill">0</span>
+            </h2>
+          </div>
+          <div class="search-bar">
+            <input type="text" class="search-input" id="home-search"
+              placeholder="Search by title, address, or citizen name…" oninput="filterHomeComplaints()"
+              autocomplete="off" name="cc-home-search" />
+          </div>
+          <div id="home-loading" class="loading-spinner">
+            <div class="spinner"></div>
+          </div>
+          <div id="home-list" class="complaint-grid hidden"></div>
+          <div id="home-empty" class="empty-state hidden">
+            <div class="empty-icon">🎉</div>
+            <h3>All Caught Up!</h3>
+            <p>There are no unassigned complaints in your city right now.</p>
+          </div>
+        </div>
+
+        <!-- ASSIGNED: Department-wise -->
+        <div id="view-assigned" class="view">
+          <div class="section-header-row">
+            <h2 class="section-title">Assigned Complaints</h2>
+          </div>
+          <div id="assigned-loading" class="loading-spinner">
+            <div class="spinner"></div>
+          </div>
+          <div id="assigned-list" class="hidden"></div>
+          <div id="assigned-empty" class="empty-state hidden">
+            <div class="empty-icon">📭</div>
+            <h3>No Assigned Complaints Yet</h3>
+            <p>Once you assign complaints to departments, they will appear here grouped by department.</p>
+          </div>
+        </div>
+
+        <!-- RETURNS: Return Requests from Departments -->
+        <div id="view-returns" class="view">
+          <div class="section-header-row">
+            <h2 class="section-title">Return Requests <span id="returns-count-pill" class="count-pill">0</span></h2>
+          </div>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;">Complaints that departments have
+            requested to return. Review the reason and accept or decline.</p>
+          <div id="returns-loading" class="loading-spinner">
+            <div class="spinner"></div>
+          </div>
+          <div id="returns-list" class="hidden"></div>
+          <div id="returns-empty" class="empty-state hidden">
+            <div class="empty-icon">✅</div>
+            <h3>No Return Requests</h3>
+            <p>All departments are handling their assigned complaints.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Global Footer -->
+      
+    <!-- DETAILED FOOTER -->
+    <footer class="app-footer-detailed" style="margin-top:auto;">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-brand-title">URBANO</div>
+          <div class="footer-brand-desc">Empowering urban communities through transparent, efficient, and responsive complaint management.</div>
+        </div>
+        <div class="footer-links-group">
+          <div class="footer-col">
+            <div class="footer-col-title">Support</div>
+            <a style="cursor: pointer;" onclick="openFooterModal('help')">Help Center</a>
+            <a style="cursor: pointer;" onclick="openFooterModal('contact')">Contact Us</a>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title">Legal</div>
+            <a style="cursor: pointer;" onclick="openFooterModal('terms')">Terms & Conditions</a>
+            <a style="cursor: pointer;" onclick="openFooterModal('privacy')">Privacy Policy</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 Urbano. All rights reserved.</div>
+        <div>Version 1.0.0</div>
+      </div>
+    </footer>
+
+    </div>
+  </div>
+
+  <!-- ═══ DECLINE RETURN MODAL ═══ -->
+  <div id="decline-modal" class="modal-overlay" onclick="if(event.target===this)closeDeclineModal()">
+    <div
+      style="background:#fff;border-radius:16px;padding:2rem;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(59,140,140,0.18);animation:modalIn 0.22s ease;">
+      <div style="font-size:1.1rem;font-weight:800;color:#1e3535;margin-bottom:0.3rem;">Decline Return Request</div>
+      <div style="font-size:0.84rem;color:#7a9e9e;margin-bottom:1.25rem;line-height:1.6;">Provide a reason for
+        declining. This note will be sent back to the department explaining why the return was not accepted.</div>
+      <div id="decline-modal-alert"
+        style="display:none;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:8px;padding:0.65rem 0.9rem;font-size:0.83rem;margin-bottom:0.85rem;">
+      </div>
+      <div style="margin-bottom:1rem;">
+        <label style="font-size:0.8rem;font-weight:700;color:#2a5050;display:block;margin-bottom:0.35rem;">Reason for
+          Declining</label>
+        <textarea id="decline-reason-input" rows="3" placeholder="Provide a Reason here "
+          style="width:100%;border:1.5px solid #cde6e6;border-radius:8px;padding:0.7rem 0.9rem;font-family:'Inter',sans-serif;font-size:0.88rem;outline:none;resize:vertical;color:#1e3535;"></textarea>
+      </div>
+      <div style="display:flex;gap:0.65rem;">
+        <button onclick="closeDeclineModal()"
+          style="flex:1;padding:0.65rem;background:none;border:1.5px solid #cde6e6;border-radius:8px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;color:#7a9e9e;cursor:pointer;">Cancel</button>
+        <button id="decline-submit-btn" onclick="submitDecline()"
+          style="flex:1;padding:0.65rem;background:#dc2626;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;">Decline
+          Return</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====================================================================
+    // STATE
+    // ====================================================================
+    const state = {
+      managerTableId: sessionStorage.getItem('cc_manager_table_id'),
+      managerId: sessionStorage.getItem('cc_manager_id'),
+      isApproved: sessionStorage.getItem('cc_is_approved') === '1',
+      profile: null,
+      departments: [],
+      homeComplaints: [],
+      assignedComplaints: [],
+      returnComplaints: [],
+      currentComplaintId: null,
+      currentView: 'home',
+    };
+
+    let isEmailOtpSending = false;
+    let isEmailOtpVerifying = false;
+    let isAssigning = false;
+    let isSavingProfile = false;
+
+    // ====================================================================
+    // BOOT
+    // ====================================================================
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!state.managerTableId) { window.location.href = '/portal'; return; }
+      await loadProfile();
+      if (state.isApproved) {
+        showView('home');
+        loadDepartments();
+        loadHomeComplaints();
+        loadReturnRequests(); // load count for badge on startup
+      } else {
+        showPendingState();
+      }
+    });
+
+    // ====================================================================
+    // PROFILE
+    // ====================================================================
+    async function loadProfile() {
+      try {
+        const res = await fetch(`/api/manager/profile?manager_table_id=${state.managerTableId}&_t=${Date.now()}`);
+        const data = await res.json();
+        if (data.success) {
+          state.profile = data.profile;
+          state.isApproved = !!data.profile.is_approved;
+          sessionStorage.setItem('cc_is_approved', state.isApproved ? '1' : '0');
+          renderProfileView();
+        }
+      } catch (e) { /* silent */ }
+    }
+
+    function renderProfileView() {
+      const p = state.profile;
+      if (!p) return;
+
+      const name = (p.name && p.name !== 'Pending Manager') ? p.name : 'Manager';
+      const initial = name.charAt(0).toUpperCase();
+
+      document.getElementById('sidebar-avatar').textContent = initial;
+      document.getElementById('sidebar-name').textContent = name;
+      document.getElementById('sidebar-mgr-id').textContent = p.manager_id || 'Pending ID';
+
+      document.getElementById('pv-name').textContent = p.name || '—';
+      document.getElementById('pv-email').textContent = p.email || '—';
+      document.getElementById('pv-mgr-id').textContent = p.manager_id || 'Pending';
+      document.getElementById('pv-mobile').textContent = p.mobile_number || '—';
+      document.getElementById('pv-dob').textContent = p.dob || '—';
+      document.getElementById('pv-age').textContent = p.age || '—';
+      document.getElementById('pv-gender').textContent = p.gender || '—';
+      document.getElementById('pv-address').textContent = p.address || '—';
+      document.getElementById('pv-city').textContent = p.assigned_city || '—';
+
+      const city = p.assigned_city || '(not assigned yet)';
+      document.getElementById('topbar-title').textContent = `Hello, ${name}`;
+      document.getElementById('topbar-subtitle').textContent = `Managing city: ${city}`;
+    }
+
+    function toggleProfilePanel() {
+      const panel = document.getElementById('profile-expanded');
+      const icon = document.getElementById('profile-toggle-icon');
+      const isOpen = panel.classList.toggle('open');
+      icon.textContent = isOpen ? '▴' : '▾';
+    }
+
+    function enableProfileEdit() {
+      const p = state.profile || {};
+      document.getElementById('pe-name').value = p.name || '';
+      document.getElementById('pe-mobile').value = p.mobile_number || '';
+      document.getElementById('pe-dob').value = p.dob || '';
+      document.getElementById('pe-age').value = p.age || '';
+      document.getElementById('pe-gender').value = p.gender || '';
+      document.getElementById('pe-address').value = p.address || '';
+      document.getElementById('pe-mgr-id').value = p.manager_id || 'Pending';
+      document.getElementById('pe-city').value = p.assigned_city || 'Not assigned';
+      document.getElementById('profile-edit-alert').classList.add('hidden');
+      document.getElementById('profile-view-mode').classList.add('hidden');
+      document.getElementById('profile-edit-mode').classList.remove('hidden');
+    }
+
+    function cancelProfileEdit() {
+      document.getElementById('profile-view-mode').classList.remove('hidden');
+      document.getElementById('profile-edit-mode').classList.add('hidden');
+    }
+
+    async function saveProfile() {
+      if (isSavingProfile) return;
+      const body = {
+        manager_table_id: parseInt(state.managerTableId),
+        name: document.getElementById('pe-name').value.trim(),
+        mobile_number: document.getElementById('pe-mobile').value.trim(),
+        dob: document.getElementById('pe-dob').value,
+        age: parseInt(document.getElementById('pe-age').value) || null,
+        gender: document.getElementById('pe-gender').value,
+        address: document.getElementById('pe-address').value.trim(),
+      };
+
+      if (!body.name || !body.mobile_number) {
+        const el = document.getElementById('profile-edit-alert');
+        el.className = 'alert alert-error';
+        el.textContent = 'Name and Mobile Number are required.';
+        el.classList.remove('hidden');
+        return;
+      }
+
+      isSavingProfile = true;
+      try {
+        const res = await fetch('/api/manager/update_profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast('Profile updated successfully!', 'success');
+          cancelProfileEdit();
+          await loadProfile();
+        } else {
+          const el = document.getElementById('profile-edit-alert');
+          el.className = 'alert alert-error';
+          el.textContent = data.error || 'Failed to update.';
+          el.classList.remove('hidden');
+        }
+      } catch (e) {
+        const el = document.getElementById('profile-edit-alert');
+        el.className = 'alert alert-error';
+        el.textContent = 'Server error. Please try again.';
+        el.classList.remove('hidden');
+      }
+      isSavingProfile = false;
+    }
+
+    function logout() {
+      const id = sessionStorage.getItem('cc_manager_table_id');
+      if (id) {
+        // Mark offline synchronously before page unload
+        navigator.sendBeacon('/api/logout_status', JSON.stringify({ role: 'manager', id: parseInt(id) }));
+      }
+      sessionStorage.clear();
+      window.location.href = '/portal';
+    }
+
+    // Also mark offline when tab/window is closed
+    window.addEventListener('beforeunload', () => {
+      const id = sessionStorage.getItem('cc_manager_table_id');
+      if (id) {
+        navigator.sendBeacon('/api/logout_status', JSON.stringify({ role: 'manager', id: parseInt(id) }));
+      }
+    });
+
+    // ====================================================================
+    // VIEW MANAGEMENT
+    // ====================================================================
+    function showPendingState() {
+      ['pending', 'home', 'assigned', 'returns'].forEach(v => document.getElementById(`view-${v}`)?.classList.remove('active'));
+      document.getElementById('view-pending').classList.add('active');
+    }
+
+    function showView(view, push = true) {
+      state.currentView = view;
+      ['pending', 'home', 'assigned', 'returns'].forEach(v => {
+        document.getElementById(`view-${v}`)?.classList.remove('active');
+      });
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(`view-${view}`)?.classList.add('active');
+      const navId = view === 'returns' ? 'nav-returns' : `nav-${view}`;
+      const nav = document.getElementById(navId);
+      if (nav) nav.classList.add('active');
+
+      if (push) {
+        history.pushState({ view: view }, "", "#" + view);
+      }
+
+      if (view === 'assigned') loadAssignedComplaints();
+      if (view === 'returns') loadReturnRequests();
+    }
+
+    window.addEventListener("popstate", (e) => {
+      if (!sessionStorage.getItem('cc_role')) {
+        window.location.replace('/');
+        return;
+      }
+      if (e.state && e.state.view) {
+        showView(e.state.view, false);
+      } else {
+        if (!state.isApproved) showPendingState();
+        else showView('home', false);
+      }
+    });
+
+    function refreshCurrentView() {
+      if (state.currentView === 'home') loadHomeComplaints();
+      if (state.currentView === 'assigned') loadAssignedComplaints();
+      if (state.currentView === 'returns') loadReturnRequests();
+    }
+
+    // ====================================================================
+    // HOME COMPLAINTS
+    // ====================================================================
+    async function loadHomeComplaints() {
+      document.getElementById('home-loading').classList.remove('hidden');
+      document.getElementById('home-list').classList.add('hidden');
+      document.getElementById('home-empty').classList.add('hidden');
+
+      try {
+        const res = await fetch(`/api/manager/pending_complaints?manager_table_id=${state.managerTableId}`);
+        const data = await res.json();
+        state.homeComplaints = (data.success && data.complaints) ? data.complaints : [];
+      } catch (e) { state.homeComplaints = []; }
+
+      document.getElementById('home-loading').classList.add('hidden');
+      renderHomeComplaints(state.homeComplaints);
+    }
+
+    function renderHomeComplaints(list) {
+      const badge = document.getElementById('badge-home');
+      const pill = document.getElementById('home-count-pill');
+      badge.textContent = list.length;
+      pill.textContent = list.length;
+
+      if (list.length === 0) {
+        document.getElementById('home-list').classList.add('hidden');
+        document.getElementById('home-empty').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('home-list').innerHTML = list.map(c => `
+    <div class="complaint-card" onclick="openDetail(${c.id}, false)">
+      <div class="card-header">
+        <span class="card-id">#${c.id}</span>
+        <span class="badge badge-registered">Unassigned</span>
+      </div>
+      <div class="card-title">${escHtml(c.title)}</div>
+      <div class="card-meta">📍 ${escHtml(c.address || c.city)}</div>
+      <div class="card-meta">👤 ${escHtml(c.user_name || '—')}</div>
+      <div class="card-meta">🕒 ${fmtDate(c.created_at)}</div>
+    </div>
+  `).join('');
+
+      document.getElementById('home-list').classList.remove('hidden');
+      document.getElementById('home-empty').classList.add('hidden');
+    }
+
+    function filterHomeComplaints() {
+      const q = document.getElementById('home-search').value.toLowerCase();
+      const filtered = state.homeComplaints.filter(c =>
+        (c.title || '').toLowerCase().includes(q) ||
+        (c.address || '').toLowerCase().includes(q) ||
+        (c.user_name || '').toLowerCase().includes(q)
+      );
+      renderHomeComplaints(filtered);
+    }
+
+    // ====================================================================
+    // ASSIGNED COMPLAINTS
+    // ====================================================================
+    async function loadAssignedComplaints() {
+      document.getElementById('assigned-loading').classList.remove('hidden');
+      document.getElementById('assigned-list').classList.add('hidden');
+      document.getElementById('assigned-empty').classList.add('hidden');
+
+      try {
+        const res = await fetch(`/api/manager/all_assigned_complaints?manager_table_id=${state.managerTableId}`);
+        const data = await res.json();
+        document.getElementById('assigned-loading').classList.add('hidden');
+
+        if (data.success && data.complaints.length > 0) {
+          state.assignedComplaints = data.complaints;  // cache for detail panel
+          renderAssignedComplaints(data.complaints);
+        } else {
+          state.assignedComplaints = [];
+          document.getElementById('assigned-empty').classList.remove('hidden');
+        }
+      } catch (e) {
+        document.getElementById('assigned-loading').classList.add('hidden');
+        document.getElementById('assigned-empty').classList.remove('hidden');
+      }
+    }
+
+    function renderAssignedComplaints(complaints) {
+      const groups = {};
+      complaints.forEach(c => {
+        const k = c.department_name || 'Unknown Department';
+        if (!groups[k]) groups[k] = [];
+        groups[k].push(c);
+      });
+
+      document.getElementById('assigned-list').innerHTML = Object.entries(groups).map(([deptName, items]) => `
+    <div class="dept-section">
+      <div class="dept-section-header" onclick="toggleDeptSection(this)">
+        <div class="dept-icon">🏢</div>
+        <span class="dept-name">${escHtml(deptName)}</span>
+        <span class="dept-count">${items.length} complaint${items.length !== 1 ? 's' : ''}</span>
+        <span class="dept-toggle">▾</span>
+      </div>
+      <div class="dept-complaint-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; padding: 1rem; background: var(--bg);">
+        ${items.map(c => `
+          <div class="complaint-card" onclick="openDetail(${c.id}, true)">
+            <div class="card-header">
+              <span class="card-id">#${c.id}</span>
+              ${statusBadge(c.status)}
+            </div>
+            <div class="card-title">${escHtml(c.title)}</div>
+            <div class="card-meta">📍 ${escHtml(c.address || c.city)}</div>
+            <div class="card-meta">🗓 Filed: ${fmtDate(c.created_at)}</div>
+            ${c.assigned_at ? `<div class="card-meta">📌 Assigned: ${fmtDate(c.assigned_at)}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+      document.getElementById('assigned-list').classList.remove('hidden');
+    }
+
+    function toggleDeptSection(header) {
+      header.classList.toggle('collapsed');
+      const list = header.nextElementSibling;
+      list.style.display = header.classList.contains('collapsed') ? 'none' : 'grid';
+    }
+
+    // ====================================================================
+    // DETAIL PANEL
+    // ====================================================================
+    async function openDetail(complaintId, isAssigned) {
+      state.currentComplaintId = complaintId;
+      document.getElementById('detail-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      document.getElementById('d-media').innerHTML = '<div class="spinner" style="margin:1rem auto"></div>';
+      document.getElementById('assign-section').classList.toggle('hidden', isAssigned);
+      document.getElementById('already-assigned-section').classList.toggle('hidden', !isAssigned);
+      document.getElementById('assign-alert').classList.add('hidden');
+      document.getElementById('assign-note').value = '';
+
+      // Look in home cache first, then assigned cache
+      let complaint = state.homeComplaints.find(c => c.id === complaintId)
+        || state.assignedComplaints.find(c => c.id === complaintId);
+
+      // If not in cache at all, fetch from assigned endpoint
+      if (!complaint && isAssigned) {
+        try {
+          const res = await fetch(`/api/manager/all_assigned_complaints?manager_table_id=${state.managerTableId}`);
+          const d = await res.json();
+          if (d.success) {
+            state.assignedComplaints = d.complaints;
+            complaint = d.complaints.find(c => c.id === complaintId);
+          }
+        } catch (e) { }
+      }
+
+      if (!complaint) { closeDetail(); return; }
+
+      document.getElementById('detail-id').innerHTML = `Complaint #${complaint.id} <span style="margin-left:0.5rem">${statusBadge(complaint.status || 'Registered')}</span>`;
+      document.getElementById('detail-title').textContent = complaint.title || '—';
+      document.getElementById('d-status').innerHTML = statusBadge(complaint.status || 'Registered');
+      document.getElementById('d-city').textContent = complaint.city || '—';
+      document.getElementById('d-address').textContent = complaint.address || '—';
+      document.getElementById('d-details').textContent = complaint.details || '—';
+      document.getElementById('d-date').textContent = fmtDate(complaint.created_at);
+      document.getElementById('d-landmark').textContent = complaint.landmark || '—';
+
+      // Map Initialization
+      const lat = complaint.latitude;
+      const lng = complaint.longitude;
+      document.getElementById('mc-lat').textContent = lat || '--';
+      document.getElementById('mc-lng').textContent = lng || '--';
+      const mapContainer = document.getElementById('mc-map-container');
+      const mapError = document.getElementById('mc-map-error');
+      
+      if (lat && lng) {
+          mapContainer.style.display = 'block';
+          mapError.style.display = 'none';
+          
+          if (!window.mcMap) {
+              window.mcMap = L.map('mc-map-container');
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  maxZoom: 19,
+                  attribution: '© OpenStreetMap'
+              }).addTo(window.mcMap);
+              window.mcMarker = L.marker([lat, lng]).addTo(window.mcMap);
+          }
+          
+          window.mcMap.setView([lat, lng], 15);
+          window.mcMarker.setLatLng([lat, lng]);
+          
+          setTimeout(() => { window.mcMap.invalidateSize(); }, 300);
+      } else {
+          mapContainer.style.display = 'none';
+          mapError.style.display = 'block';
+      }
+      document.getElementById('d-assigned-on').textContent = complaint.assigned_at ? fmtDate(complaint.assigned_at) : '-';
+      document.getElementById('d-dept').textContent = complaint.department_name || '-';
+      document.getElementById('d-user-name').textContent = complaint.user_name || '-';
+      document.getElementById('d-user-email').textContent = complaint.user_email || '-';
+      document.getElementById('d-user-mobile').textContent = complaint.user_mobile || '-';
+      document.getElementById('d-user-address').textContent = complaint.user_address || '-';
+
+      // Media
+      try {
+        const mr = await fetch(`/api/manager/complaint_media?complaint_id=${complaintId}`);
+        const md = await mr.json();
+        const paths = md.media || [];
+        if (paths.length > 0) {
+          document.getElementById('d-media').innerHTML = paths.map(m => {
+            if (m.match(/\.(mp4|mov|avi)$/i)) return `<video src="/${m}" controls style="max-width:140px; border-radius:8px; border:1px solid var(--border);"></video>`;
+            return `<a href="/${m}" target="_blank"><img src="/${m}" style="max-width:100px; max-height:100px; object-fit:cover; border-radius:8px; border:1px solid var(--border);" /></a>`;
+          }).join('');
+        } else {
+          document.getElementById('d-media').innerHTML = '<div style="font-size:0.85rem;color:var(--text-muted)">No media attached</div>';
+        }
+      } catch (e) {
+        document.getElementById('d-media').innerHTML = '<span class="text-sm text-muted">Could not load media.</span>';
+      }
+
+      // History
+      document.getElementById('d-timeline').innerHTML = '<div class="spinner" style="margin:1rem auto"></div>';
+      try {
+        const hRes = await fetch(`/api/complaint_history?complaint_id=${complaintId}`);
+        const hData = await hRes.json();
+        if (hData.success && hData.history.length > 0) {
+          document.getElementById('d-timeline').innerHTML = hData.history.map(h => `
+            <div class="timeline-item">
+              <div class="timeline-dot-col">
+                <div class="timeline-dot"></div>
+                <div class="timeline-line"></div>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-action">${escHtml(h.action_type || h.status)} <span style="margin-left:0.5rem">${statusBadge(h.status)}</span></div>
+                <div class="timeline-meta">By ${escHtml(h.updated_by_role)} on ${h.created_at}</div>
+                ${h.note ? `<div class="timeline-note">${escHtml(h.note)}</div>` : ''}
+              </div>
+            </div>
+          `).join('');
+        } else {
+          document.getElementById('d-timeline').innerHTML = '<div style="font-size:0.85rem;color:var(--text-muted)">No history available.</div>';
+        }
+      } catch (e) {
+        document.getElementById('d-timeline').innerHTML = '<div style="font-size:0.85rem;color:var(--danger)">Failed to load history.</div>';
+      }
+
+      if (!isAssigned) {
+        document.getElementById('assign-note').value = '';
+      } else {
+        // Populate Assignment Details panel
+        document.getElementById('aa-dept-name').textContent = complaint.department_name || '—';
+        document.getElementById('aa-status-badge').innerHTML = statusBadge(complaint.status || 'Assigned');
+        document.getElementById('aa-assigned-date').textContent = complaint.assigned_at ? fmtDate(complaint.assigned_at) : '—';
+        document.getElementById('aa-dept-contact').textContent = complaint.dept_contact || '—';
+        // Fetch latest dept note from history
+        try {
+          const hr = await fetch(`/api/complaint_history?complaint_id=${complaintId}`);
+          const hd = await hr.json();
+          const wrap = document.getElementById('aa-latest-note-wrap');
+          if (hd.success && hd.history) {
+            const deptNotes = hd.history.filter(h => h.updated_by_role === 'Department' && h.note);
+            if (deptNotes.length > 0) {
+              const latest = deptNotes[deptNotes.length - 1];
+              document.getElementById('aa-latest-note').textContent = latest.note;
+              wrap.style.display = 'block';
+            } else { wrap.style.display = 'none'; }
+          }
+        } catch (e) { document.getElementById('aa-latest-note-wrap').style.display = 'none'; }
+      }
+
+      // Load media
+      try {
+        const mr = await fetch(`/api/manager/complaint_media?complaint_id=${complaintId}`);
+        const md = await mr.json();
+        renderMedia(md.media || []);
+      } catch (e) {
+        document.getElementById('d-media').innerHTML = '<span class="text-sm text-muted">Could not load media.</span>';
+      }
+    }
+
+    function renderMedia(paths) {
+      const el = document.getElementById('d-media');
+      if (!paths.length) { el.innerHTML = '<span class="text-sm text-muted">No media attached.</span>'; return; }
+      const videoExts = ['mp4', 'mov', 'avi', 'mkv'];
+      const pathsJson = JSON.stringify(paths).replace(/"/g, '&quot;');
+      el.innerHTML = paths.map((path, index) => {
+        const ext = (path.split('.').pop() || '').toLowerCase();
+        const url = `/${path.replace(/\\/g, '/')}`;
+        if (videoExts.includes(ext))
+          return `<div class="media-video-thumb" onclick="openMediaModal(${index}, ${pathsJson})"><video><source src="${url}"></video></div>`;
+        return `<img class="media-thumb" src="${url}" alt="Complaint media" onclick="openMediaModal(${index}, ${pathsJson})" />`;
+      }).join('');
+    }
+
+  let currentMediaList = [];
+  let currentMediaIndex = 0;
+  
+  function openMediaModal(index, paths) {
+    currentMediaList = paths;
+    currentMediaIndex = index;
+    updateMediaModal();
+    document.getElementById('media-modal').classList.add('open');
+  }
+
+  function updateMediaModal() {
+    if(!currentMediaList || currentMediaList.length === 0) return;
+    const path = currentMediaList[currentMediaIndex];
+    const ext = (path.split('.').pop() || '').toLowerCase();
+    const url = `/${path.replace(/\\/g, '/')}`;
+    const videoExts = ['mp4', 'mov', 'avi', 'mkv'];
+    const content = document.getElementById('media-modal-content');
+    if (videoExts.includes(ext)) {
+      content.innerHTML = `<video controls autoplay style="max-width:100%; max-height:85vh; border-radius:8px;"><source src="${url}"></video>`;
+    } else {
+      content.innerHTML = `<img src="${url}" style="max-width:100%; max-height:85vh; border-radius:8px; object-fit:contain;" />`;
+    }
+    document.getElementById('media-prev').style.display = currentMediaIndex > 0 ? 'inline-block' : 'none';
+    document.getElementById('media-next').style.display = currentMediaIndex < currentMediaList.length - 1 ? 'inline-block' : 'none';
+  }
+
+  function nextMedia() { if (currentMediaIndex < currentMediaList.length - 1) { currentMediaIndex++; updateMediaModal(); } }
+  function prevMedia() { if (currentMediaIndex > 0) { currentMediaIndex--; updateMediaModal(); } }
+  function closeMediaModal() {
+    document.getElementById('media-modal').classList.remove('open');
+    document.getElementById('media-modal-content').innerHTML = ''; // Stop video
+  }
+
+    function closeDetail(event) {
+      if (event && event.target !== document.getElementById('detail-overlay')) return;
+      document.getElementById('detail-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+      state.currentComplaintId = null;
+    }
+
+    // ====================================================================
+    // DEPARTMENTS
+    // ====================================================================
+    async function loadDepartments() {
+      try {
+        const res = await fetch(`/api/manager/departments?manager_table_id=${state.managerTableId}`);
+        const data = await res.json();
+        if (data.success) {
+          state.departments = data.departments || [];
+          const sel = document.getElementById('dept-select');
+          sel.innerHTML = state.departments.length === 0
+            ? '<option value="">No departments in your city yet</option>'
+            : '<option value="">Select a department…</option>' +
+            state.departments.map(d => `<option value="${d.id}">${escHtml(d.name)}</option>`).join('');
+          // auto-update note when dept changes
+          sel.onchange = () => {
+            const complaintId = state.currentComplaintId || '';
+            const dId = sel.value;
+            const note = document.getElementById('assign-note');
+            if (!dId) {
+              note.value = '';
+              return;
+            }
+            const dept = state.departments.find(x => x.id == dId);
+            const deptNameStr = dept ? `${dept.name} - ${dept.dept_id || 'Pending ID'}` : sel.options[sel.selectedIndex]?.text;
+            note.value = `Complaint ID ${complaintId} is assigned to the department ${deptNameStr}.`;
+          };
+        }
+      } catch (e) { }
+    }
+
+    async function submitAssignment() {
+      if (isAssigning) return;
+      const deptId = document.getElementById('dept-select').value;
+      const note = document.getElementById('assign-note').value.trim();
+      const alertEl = document.getElementById('assign-alert');
+
+      if (!deptId) return showAssignAlert('Please select a department.', 'error');
+      if (!note) return showAssignAlert('Please enter a dispatch note.', 'error');
+
+      alertEl.classList.add('hidden');
+      isAssigning = true;
+
+      try {
+        const res = await fetch('/api/manager/assign_complaint', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            manager_table_id: parseInt(state.managerTableId),
+            complaint_id: state.currentComplaintId,
+            department_id: parseInt(deptId),
+            note,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast('Complaint successfully assigned! ✅', 'success');
+          closeDetail();
+          loadHomeComplaints();
+        } else {
+          showAssignAlert(data.error || 'Failed to assign.', 'error');
+        }
+      } catch (e) {
+        showAssignAlert('Server error. Please try again.', 'error');
+      }
+      isAssigning = false;
+    }
+
+    function showAssignAlert(msg, type) {
+      const el = document.getElementById('assign-alert');
+      el.className = `alert alert-${type}`;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    // ====================================================================
+    // EMAIL CHANGE MODAL
+    // ====================================================================
+    function openEmailModal() {
+      isEmailOtpSending = false;
+      isEmailOtpVerifying = false;
+      document.getElementById('email-modal').classList.add('open');
+      document.getElementById('email-modal-step1').classList.remove('hidden');
+      document.getElementById('email-modal-step2').classList.add('hidden');
+      document.getElementById('email-modal-alert1').classList.add('hidden');
+      document.getElementById('email-modal-alert2').classList.add('hidden');
+      document.getElementById('new-email-input').value = '';
+      for (let i = 0; i < 6; i++) document.getElementById(`eotp${i}`).value = '';
+    }
+
+    function closeEmailModal() {
+      document.getElementById('email-modal').classList.remove('open');
+    }
+
+    async function requestEmailOtp() {
+      if (isEmailOtpSending) return;
+      const email = document.getElementById('new-email-input').value.trim();
+      if (!email || !email.includes('@')) {
+        showEmailAlert1('Please enter a valid email address.', 'error'); return;
+      }
+
+      isEmailOtpSending = true;
+      try {
+        const res = await fetch('/api/manager/request_email_change', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_email: email, manager_table_id: parseInt(state.managerTableId) }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('email-modal-step1').classList.add('hidden');
+          document.getElementById('email-modal-step2').classList.remove('hidden');
+          document.getElementById('email-otp-hint').textContent = `OTP sent to ${email}. Enter the 6-digit code.`;
+          document.getElementById('eotp0').focus();
+        } else {
+          showEmailAlert1(data.error || 'Failed to send OTP.', 'error');
+          isEmailOtpSending = false;
+        }
+      } catch (e) {
+        showEmailAlert1('Server error.', 'error');
+        isEmailOtpSending = false;
+      }
+    }
+
+    async function verifyEmailOtp() {
+      if (isEmailOtpVerifying) return;
+      const digits = Array.from({ length: 6 }, (_, i) => document.getElementById(`eotp${i}`).value).join('');
+      const email = document.getElementById('new-email-input').value.trim();
+      if (digits.length !== 6) { showEmailAlert2('Enter all 6 digits.', 'error'); return; }
+
+      isEmailOtpVerifying = true;
+      try {
+        const res = await fetch('/api/manager/verify_email_change', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ manager_table_id: parseInt(state.managerTableId), new_email: email, otp: digits }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast('Email updated successfully!', 'success');
+          closeEmailModal();
+          await loadProfile();
+        } else {
+          showEmailAlert2(data.error || 'Invalid OTP.', 'error');
+          isEmailOtpVerifying = false;
+        }
+      } catch (e) {
+        showEmailAlert2('Server error.', 'error');
+        isEmailOtpVerifying = false;
+      }
+    }
+
+    function showEmailAlert1(msg, type) {
+      const el = document.getElementById('email-modal-alert1');
+      el.className = `alert alert-${type}`; el.textContent = msg; el.classList.remove('hidden');
+    }
+    function showEmailAlert2(msg, type) {
+      const el = document.getElementById('email-modal-alert2');
+      el.className = `alert alert-${type}`; el.textContent = msg; el.classList.remove('hidden');
+    }
+
+    // OTP auto-tab for email modal
+    document.querySelectorAll('#email-otp-group .otp-digit').forEach((input, idx, all) => {
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/\D/, '');
+        if (input.value && idx < all.length - 1) all[idx + 1].focus();
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) all[idx - 1].focus();
+        if (e.key === 'Enter') verifyEmailOtp();
+      });
+    });
+
+    // ====================================================================
+    // RETURN REQUESTS
+    // ====================================================================
+    async function loadReturnRequests() {
+      const loading = document.getElementById('returns-loading');
+      const list = document.getElementById('returns-list');
+      const empty = document.getElementById('returns-empty');
+      loading.classList.remove('hidden'); list.classList.add('hidden'); empty.classList.add('hidden');
+      try {
+        const res = await fetch(`/api/manager/return_requests?manager_table_id=${state.managerTableId}`);
+        const data = await res.json();
+        loading.classList.add('hidden');
+        if (data.success && data.complaints.length > 0) {
+          state.returnComplaints = data.complaints;
+          document.getElementById('badge-returns').textContent = data.complaints.length;
+          document.getElementById('returns-count-pill').textContent = data.complaints.length;
+          list.classList.remove('hidden');
+          renderReturnRequests(data.complaints);
+        } else {
+          state.returnComplaints = [];
+          document.getElementById('badge-returns').textContent = '0';
+          document.getElementById('returns-count-pill').textContent = '0';
+          empty.classList.remove('hidden');
+        }
+      } catch (e) {
+        loading.classList.add('hidden'); empty.classList.remove('hidden');
+      }
+    }
+
+    function renderReturnRequests(complaints) {
+      const list = document.getElementById('returns-list');
+      list.innerHTML = complaints.map(c => `
+    <div style="background:var(--white);border:1.5px solid #fecaca;border-radius:var(--radius);padding:1.1rem 1.25rem;margin-bottom:0.85rem;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.65rem;">
+        <div>
+          <span style="font-size:0.72rem;font-family:monospace;background:#fef2f2;color:#dc2626;padding:0.15rem 0.45rem;border-radius:4px;">#${c.id}</span>
+          <div style="font-size:1rem;font-weight:700;color:var(--text);margin-top:0.3rem;">${escHtml(c.title)}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">🏢 ${escHtml(c.department_name)} &nbsp;·&nbsp; 📍 ${escHtml(c.city)} &nbsp;·&nbsp; 👤 ${escHtml(c.user_name || '—')}</div>
+        </div>
+        <span class="badge badge-pending" style="flex-shrink:0;">↩️ Return Pending</span>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius-sm);padding:0.75rem 0.9rem;font-size:0.85rem;color:#dc2626;line-height:1.6;margin-bottom:0.85rem;">
+        <strong>Reason for Return:</strong> ${escHtml(c.return_reason || 'No reason provided')}
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.85rem;">Returned on: ${fmtDate(c.returned_at)}</div>
+      <div style="display:flex;gap:0.65rem;">
+        <button class="btn btn-sm" style="background:#16a34a;color:#fff;border-color:#16a34a;flex:1;" onclick="handleReturn(${c.id}, 'Accept')">
+          ✅ Accept Return
+        </button>
+        <button class="btn btn-sm btn-danger" style="flex:1;" onclick="handleReturn(${c.id}, 'Decline')">
+          ❌ Decline Return
+        </button>
+      </div>
+    </div>
+  `).join('');
+      list.classList.remove('hidden');
+    }
+
+    async function handleReturn(complaintId, decision) {
+      if (decision === 'Decline') {
+        // Open the decline modal instead of using prompt()
+        state.pendingDeclineId = complaintId;
+        document.getElementById('decline-reason-input').value = '';
+        document.getElementById('decline-modal-alert').style.display = 'none';
+        document.getElementById('decline-modal').classList.add('open');
+        return;
+      }
+      // Accept — use a clean confirm dialog
+      const confirmed = confirm('Accept this return? The complaint will be moved back to the Unassigned queue.');
+      if (!confirmed) return;
+      await submitReturn(complaintId, 'Accept', '');
+    }
+
+    async function submitReturn(complaintId, decision, replyNote) {
+      try {
+        const res = await fetch('/api/manager/handle_return', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            manager_table_id: parseInt(state.managerTableId),
+            complaint_id: complaintId,
+            decision: decision,
+            reply_note: replyNote
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast(data.message, 'success');
+          loadReturnRequests();
+          if (decision === 'Accept') loadHomeComplaints();
+        } else {
+          toast(data.error || 'Action failed.', 'error');
+        }
+      } catch (e) {
+        toast('Server error. Please try again.', 'error');
+      }
+    }
+
+    function closeDeclineModal() {
+      document.getElementById('decline-modal').classList.remove('open');
+      state.pendingDeclineId = null;
+    }
+
+    async function submitDecline() {
+      const reason = document.getElementById('decline-reason-input').value.trim();
+      const alertEl = document.getElementById('decline-modal-alert');
+      if (!reason) {
+        alertEl.textContent = 'A reason is required to decline this return request.';
+        alertEl.style.display = 'block';
+        return;
+      }
+      const btn = document.getElementById('decline-submit-btn');
+      btn.disabled = true; btn.textContent = 'Declining…';
+      closeDeclineModal();
+      await submitReturn(state.pendingDeclineId, 'Decline', reason);
+      btn.disabled = false; btn.textContent = 'Decline Return';
+    }
+
+
+    // ====================================================================
+    // UTILITIES
+    // ====================================================================
+    function statusBadge(status) {
+      if (!status) return '<span class="badge badge-registered">Registered</span>';
+      let cls = 'badge-registered';
+      let displayStatus = status;
+      if (status === 'Working') cls = 'badge-working';
+      else if (status === 'Resolved') cls = 'badge-resolved';
+      else if (status === 'Return Pending') cls = 'badge-return';
+      else if (status.startsWith('Task Assigned')) {
+          cls = 'badge-assigned';
+          displayStatus = 'Assigned';
+      }
+      return `<span class="badge ${cls}">${escHtml(displayStatus)}</span>`;
+    }
+
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function fmtDate(dt) {
+      if (!dt) return '—';
+      try {
+        return new Date(dt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      } catch { return dt; }
+    }
+
+    function toast(msg, type = 'success') {
+      const el = document.createElement('div');
+      el.className = `toast toast-${type}`;
+      const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+      el.textContent = `${icons[type] || ''} ${msg}`;
+      document.getElementById('toast-container').appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+  
+function startOtpTimer(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = true;
+    let timeLeft = 15;
+    btn.textContent = `Resend OTP (${timeLeft}s)`;
+    const timer = setInterval(() => {
+        timeLeft -= 1;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.textContent = 'Resend OTP';
+            btn.disabled = false;
+        } else {
+            btn.textContent = `Resend OTP (${timeLeft}s)`;
+        }
+    }, 1000);
+}
+
+let chatOpen = false;
+let chatPollTimer = null;
+
+function toggleChat() {
+    chatOpen = !chatOpen;
+    document.getElementById('chat-window').classList.toggle('open', chatOpen);
+    if(chatOpen) {
+        pollMessages();
+        chatPollTimer = setInterval(pollMessages, 3000);
+    } else {
+        clearInterval(chatPollTimer);
+    }
+}
+
+async function pollMessages() {
+    const id = sessionStorage.getItem('cc_manager_table_id');
+    if(!id) return;
+    try {
+        const res = await fetch(`/api/messages/fetch?role1=manager&id1=${id}&role2=admin&id2=1`);
+        const data = await res.json();
+        if(data.success) {
+            renderMessages(data.messages);
+        }
+    } catch(e) {}
+}
+
+function renderMessages(msgs) {
+    const container = document.getElementById('chat-messages');
+    if(!msgs.length) {
+        container.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:0.8rem;margin-top:auto;margin-bottom:auto;">Start a conversation with Admin.</div>';
+        return;
+    }
+    const html = msgs.map(m => {
+        const isMe = m.sender_role === 'manager';
+        return `<div class="chat-bubble ${isMe ? 'sent' : 'received'}">${m.content}</div>`;
+    }).join('');
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if(!msg) return;
+    const id = sessionStorage.getItem('cc_manager_table_id');
+    if(!id) return;
+    input.value = '';
+    
+    // Optimistic UI
+    const container = document.getElementById('chat-messages');
+    container.innerHTML += `<div class="chat-bubble sent" style="opacity:0.7">${msg}</div>`;
+    container.scrollTop = container.scrollHeight;
+    
+    await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            sender_role: 'manager', sender_id: id,
+            receiver_role: 'admin', receiver_id: 1,
+            content: msg
+        })
+    });
+    pollMessages();
+}
+
+async function clearChat() {
+    const id = sessionStorage.getItem('cc_manager_table_id');
+    if(!id) return;
+    if(!confirm('Are you sure you want to clear this chat history?')) return;
+    
+    await fetch('/api/messages/clear', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ role: 'manager', id: id })
+    });
+    pollMessages();
+}
+
+</script>
+
+  <!-- FOOTER MODAL -->
+  <div id="footer-modal" class="modal-overlay" style="z-index:9999; display:none;" onclick="if(event.target===this) closeFooterModal()">
+    <div class="modal-box" style="max-width:550px;">
+      <div class="modal-title" id="fm-title">Title</div>
+      <div class="footer-modal-content" id="fm-content" style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1.5rem; color: var(--text); line-height: 1.6; font-size: 0.9rem;">
+        Content goes here...
+      </div>
+      <div class="modal-actions" style="justify-content:flex-end;">
+        <button class="btn btn-secondary" style="width:auto" onclick="closeFooterModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openFooterModal(type) {
+      const modal = document.getElementById('footer-modal');
+      const title = document.getElementById('fm-title');
+      const content = document.getElementById('fm-content');
+      
+      if (type === 'help') {
+        title.textContent = 'Help Center';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">How to use the Dashboard</h3><p>Use the navigation menu to switch between views. You can view complaint details by clicking on any complaint card.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">FAQs</h3><p><strong>Q: How do I change my email?</strong><br>A: Click on the Email button in your profile panel and verify using the OTP sent to your new address.</p>';
+      } else if (type === 'contact') {
+        title.textContent = 'Contact Us';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Get in Touch</h3><p>If you are experiencing technical difficulties with the Urbano portal, please reach out to our IT support desk.</p><p><strong>Email:</strong> support@mysore.city<br><strong>Phone:</strong> +91 1800-URBANO-123<br><strong>Hours:</strong> Mon - Fri, 9:00 AM - 6:00 PM</p>';
+      } else if (type === 'terms') {
+        title.textContent = 'Terms & Conditions';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">1. Usage Policy</h3><p>This portal is intended solely for official municipal use. Unauthorized access is strictly prohibited and monitored.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">2. Data Accuracy</h3><p>You are responsible for ensuring that the status of complaints accurately reflects the real-world resolution state.</p>';
+      } else if (type === 'privacy') {
+        title.textContent = 'Privacy Policy & Copyright';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Data Handling</h3><p>All citizen data, including names, contact numbers, and addresses, are strictly confidential. Do not share this information outside of the official communication channels.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Copyright</h3><p>&copy; 2026 Mysore City Corporation. All rights reserved. System components and styling are proprietary.</p>';
+      }
+      modal.classList.add('open');
+      modal.style.display = 'flex';
+      modal.style.visibility = 'visible';
+      modal.style.opacity = '1';
+    }
+
+    function closeFooterModal() {
+      const modal = document.getElementById('footer-modal');
+      if(modal) {
+        modal.classList.remove('open');
+        modal.style.display = 'none';
+        modal.style.visibility = 'hidden';
+        modal.style.opacity = '0';
+      }
+    }
+  
+function startOtpTimer(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = true;
+    let timeLeft = 15;
+    btn.textContent = `Resend OTP (${timeLeft}s)`;
+    const timer = setInterval(() => {
+        timeLeft -= 1;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.textContent = 'Resend OTP';
+            btn.disabled = false;
+        } else {
+            btn.textContent = `Resend OTP (${timeLeft}s)`;
+        }
+    }, 1000);
+}
+
+</script>
+
+
+<div class="chat-window" id="chat-window">
+    <div class="chat-header">
+        <div>
+            <div style="font-size:1rem;">Admin Support</div>
+            <div style="font-size:0.75rem;font-weight:400;opacity:0.8;">Status: Online</div>
+        </div>
+        <div>
+            <button onclick="clearChat()" style="background:none;border:none;color:white;cursor:pointer;margin-right:15px;font-size:0.85rem;text-decoration:underline;">Clear</button>
+            <span style="cursor:pointer;font-size:1.1rem;" onclick="toggleChat()">✕</span>
+        </div>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+        <div style="text-align:center;color:#94a3b8;font-size:0.8rem;margin-top:auto;margin-bottom:auto;">Loading messages...</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+        <button onclick="sendChatMessage()" style="font-size:1.2rem; font-weight:bold; display:flex; align-items:center; justify-content:center;">➔</button>
+    </div>
+</div>
+
+  <!-- Media Modal -->
+  <div id="media-modal" class="modal-overlay" style="z-index:9999;" onclick="if(event.target===this) closeMediaModal()">
+    <div style="position:relative; width:90%; height:90%; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+      <button onclick="closeMediaModal()" style="position:absolute; top:-10px; right:-10px; background:white; color:black; border:none; border-radius:50%; width:40px; height:40px; font-size:1.5rem; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:10001;">&times;</button>
+      <div id="media-modal-content" style="max-width:100%; max-height:100%; display:flex; align-items:center; justify-content:center;"></div>
+      <div style="position:absolute; bottom:20px; display:flex; gap:10px;">
+        <button id="media-prev" onclick="prevMedia()" class="btn btn-primary">&larr; Prev</button>
+        <button id="media-next" onclick="nextMedia()" class="btn btn-primary">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

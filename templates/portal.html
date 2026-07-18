@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urbano — Urban Complaint Management</title>
+  <meta name="description" content="Urbano — Urban Complaint Management System. Sign in as Manager or Department." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    /* ═══════════════════════════════════════════
+       URBANO PORTAL — Full-page single experience
+    ═══════════════════════════════════════════ */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #f0faf8;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── INTRO SPLASH ──────────────────────────── */
+    #intro {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #ceefdc;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 1.2rem; opacity: 1; transition: opacity 0.9s ease;
+    }
+    #intro.fade-out { opacity: 0; pointer-events: none; }
+    .intro-logo-wrap {
+      animation: introPop 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
+    }
+    .intro-logo-img {
+      width: 100px; height: 100px; object-fit: contain;
+      filter: drop-shadow(0 4px 16px rgba(0,0,0,0.2));
+    }
+    .intro-wordmark {
+      font-size: 2.8rem; font-weight: 900; color: #1e3535;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      animation: introUp 0.5s ease 0.55s both;
+    }
+    .intro-tagline {
+      font-size: 0.88rem; color: #3f8a8d;
+      font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+      animation: introUp 0.5s ease 0.7s both;
+    }
+    @keyframes introPop { from{opacity:0;transform:scale(0.3)} to{opacity:1;transform:scale(1)} }
+    @keyframes introUp  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── PORTAL WRAPPER ────────────────────────── */
+    #portal-wrap {
+      min-height: 100vh;
+      display: flex; flex-direction: column; 
+    }
+    .phase-container {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 2rem 1.5rem;
+    }
+
+    /* ── PHASE MANAGEMENT ──────────────────────── */
+    .phase {
+      width: 100%; max-width: 900px;
+      display: none; flex-direction: column; align-items: center;
+    }
+    .phase.active {
+      display: flex;
+      animation: phaseIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .phase.exit {
+      animation: phaseOut 0.3s ease forwards;
+      pointer-events: none;
+    }
+    @keyframes phaseIn  { 
+      from { opacity: 0; transform: translateY(24px) scale(0.97); } 
+      to { opacity: 1; transform: translateY(0) scale(1); } 
+    }
+    @keyframes phaseOut { 
+      from { opacity: 1; transform: translateY(0) scale(1); } 
+      to { opacity: 0; transform: translateY(-16px) scale(0.97); } 
+    }
+
+    /* ── PORTAL FOOTER ─────────────────────────── */
+    .portal-footer {
+      padding: 1.25rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.78rem; color: #7a9e9e;
+      border-top: 1px solid rgba(205, 230, 230, 0.4);
+      background: rgba(240, 250, 248, 0.75);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+      width: 100%;
+    }
+    .portal-footer-links {
+      display: flex; gap: 1.5rem;
+    }
+    .portal-footer-links a {
+      color: #7a9e9e; text-decoration: none; font-weight: 500; transition: color 0.18s ease;
+    }
+    .portal-footer-links a:hover {
+      color: #3f8a8d;
+    }
+    @media (max-width: 600px) {
+      .portal-footer {
+        flex-direction: column; gap: 0.75rem; text-align: center;
+        padding: 1rem; position: relative; background: #f0faf8;
+        border-top: none;
+      }
+      .phase-container { padding-bottom: 2rem; }
+    }
+
+    /* ── LOGO HEADER (shared) ──────────────────── */
+    .portal-logo-header {
+      display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+      margin-bottom: 2.8rem;
+    }
+    .logo-container {
+      position: relative; display: inline-block;
+    }
+    .main-logo-img {
+      display: block; object-fit: contain;
+      transition: all 0.3s ease;
+    }
+    .logo-role-badge {
+      position: absolute; bottom: -4px; right: -4px;
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; border: 3px solid #f0faf8;
+      opacity: 0; transform: scale(0);
+      transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .logo-role-badge.show { opacity: 1; transform: scale(1); }
+    .logo-role-badge.manager-badge { background: #3f8a8d; }
+    .logo-role-badge.dept-badge    { background: #2a6163; }
+
+    .portal-brand-name {
+      font-size: 2rem; font-weight: 900; color: #1e3535;
+      letter-spacing: 0.06em; text-transform: uppercase; line-height: 1;
+    }
+    .portal-brand-sub {
+      font-size: 0.8rem; color: #7a9e9e; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+
+    /* ── ROLE SELECTOR ─────────────────────────── */
+    #phase-select .portal-logo-header { margin-bottom: 2rem; }
+    .role-select-title {
+      font-size: 1rem; font-weight: 600; color: #2a5050;
+      margin-bottom: 1.5rem; text-align: center;
+    }
+
+    .role-cards {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem;
+      width: 100%; max-width: 600px;
+    }
+
+    .role-card {
+      background: #fff; border: 2px solid #cde6e6; border-radius: 16px;
+      padding: 1.75rem 1.25rem 1.5rem; cursor: pointer; text-decoration: none; color: inherit;
+      transition: all 0.22s ease; display: flex; flex-direction: column; align-items: center;
+      gap: 0; position: relative; overflow: hidden; text-align: center;
+    }
+    .role-card::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, #3f8a8d, #62d0d0); transform: scaleX(0);
+      transform-origin: left; transition: transform 0.28s ease;
+    }
+    .role-card:hover { border-color: #3f8a8d; box-shadow: 0 8px 28px rgba(63, 138, 141, 0.18); transform: translateY(-4px); }
+    .role-card:hover::after { transform: scaleX(1); }
+    .role-card:active { transform: translateY(-2px); }
+    .role-card--disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+    .role-card--disabled:hover { transform: none; box-shadow: none; }
+
+    .card-logo-wrap {
+      position: relative; margin-bottom: 1.1rem;
+    }
+    .card-logo-img {
+      width: 72px; height: 72px; object-fit: contain;
+      transition: transform 0.2s ease;
+    }
+    .role-card:hover .card-logo-img { transform: scale(1.06); }
+    .card-role-badge {
+      position: absolute; bottom: -3px; right: -3px;
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; border: 2.5px solid #f0faf8;
+    }
+    .manager-badge-bg { background: #3f8a8d; }
+    .dept-badge-bg    { background: #2a6163; }
+
+    .card-role-name {
+      font-size: 1.1rem; font-weight: 800; color: #1e3535; margin-bottom: 0.35rem; letter-spacing: -0.01em;
+    }
+    .card-role-desc {
+      font-size: 0.8rem; color: #7a9e9e; line-height: 1.65; margin-bottom: 1.1rem;
+    }
+    .card-cta {
+      font-size: 0.82rem; font-weight: 700; color: #3f8a8d;
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      border-top: 1px solid #cde6e6; width: 100%; padding-top: 0.9rem; justify-content: center;
+      transition: gap 0.18s ease;
+    }
+    .role-card:hover .card-cta { gap: 0.55rem; }
+    .coming-soon-badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 700; color: #7a9e9e;
+      background: #f0faf8; border: 1px solid #cde6e6; border-radius: 20px;
+      padding: 0.2rem 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    /* ── LOGIN PHASE ───────────────────────────── */
+    #phase-login { max-width: 440px; }
+
+    .login-back-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.83rem; font-weight: 600; color: #7a9e9e;
+      background: none; border: none; cursor: pointer;
+      padding: 0.4rem 0; margin-bottom: 1.5rem;
+      transition: color 0.18s ease; align-self: flex-start;
+      font-family: 'Inter', sans-serif;
+    }
+    .login-back-btn:hover { color: #3f8a8d; }
+
+    .login-card {
+      width: 100%; background: rgba(255, 255, 255, 0.85); border: 1.5px solid rgba(205, 230, 230, 0.6);
+      border-radius: 24px; padding: 2.5rem 2.2rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 16px 48px rgba(30, 53, 53, 0.08), 0 2px 8px rgba(63, 138, 141, 0.05);
+      transition: all 0.3s ease;
+    }
+    .login-role-label {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      font-size: 0.72rem; font-weight: 700; color: #3f8a8d;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      background: #ceefdc; border-radius: 20px; padding: 0.25rem 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .login-title { font-size: 1.5rem; font-weight: 800; color: #1e3535; margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+    .login-sub { font-size: 0.85rem; color: #7a9e9e; margin-bottom: 1.75rem; }
+
+    .login-step { display: none; animation: phaseIn 0.3s ease both; }
+    .login-step.active { display: block; }
+
+    .step-title { font-size: 0.9rem; font-weight: 700; color: #1e3535; margin-bottom: 0.2rem; }
+    .step-hint  { font-size: 0.82rem; color: #7a9e9e; margin-bottom: 1.2rem; line-height: 1.6; }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: #2a5050; margin-bottom: 0.35rem; }
+    .form-control {
+      width: 100%; background: #fff; border: 1.5px solid #e5e7eb;
+      border-radius: 8px; padding: 0.7rem 0.9rem; color: #111827;
+      font-family: 'Inter', sans-serif; font-size: 0.92rem; outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .form-control:focus { border-color: #3f8a8d; box-shadow: 0 0 0 3px rgba(63, 138, 141, 0.1); }
+    .form-control::placeholder { color: #9ca3af; }
+
+    .btn-urbano {
+      width: 100%; padding: 0.72rem 1.25rem; border-radius: 8px;
+      background: linear-gradient(135deg, #3f8a8d 0%, #2a6163 100%);
+      color: #fff; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 700;
+      border: none; cursor: pointer; transition: all 0.18s ease;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .btn-urbano:hover { background: linear-gradient(135deg, #2a6163 0%, #1e4547 100%); box-shadow: 0 4px 14px rgba(63, 138, 141, 0.35); transform: translateY(-1px); }
+    .btn-urbano:active { transform: translateY(0); }
+    .btn-urbano:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-back-link {
+      width: 100%; padding: 0.65rem; background: none; border: 1.5px solid #e5e7eb;
+      border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.88rem;
+      font-weight: 600; color: #6b7280; cursor: pointer; transition: all 0.18s ease;
+      margin-top: 0.65rem;
+    }
+    .btn-back-link:hover { border-color: #3f8a8d; color: #3f8a8d; background: #ceefdc; }
+
+    .otp-group { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1.25rem; }
+    .otp-box {
+      width: 48px; height: 56px; text-align: center; font-size: 1.5rem; font-weight: 700;
+      background: #f5f7fa; border: 2px solid #e5e7eb; border-radius: 8px;
+      color: #3f8a8d; outline: none; transition: all 0.18s ease;
+    }
+    .otp-box:focus { border-color: #3f8a8d; background: #fff; box-shadow: 0 0 0 3px rgba(63, 138, 141, 0.1); }
+
+    .login-alert {
+      padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.83rem; font-weight: 500;
+      margin-bottom: 1rem; display: none;
+    }
+    .login-alert.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; display: block; }
+    .login-alert.success { background: #ceefdc; color: #1e3535; border: 1px solid #a0d4b8; display: block; }
+
+    /* ── RESPONSIVE ────────────────────────────── */
+    @media (max-width: 700px) {
+      .role-cards { grid-template-columns: 1fr; }
+      .portal-brand-name { font-size: 1.6rem; }
+      #phase-login { max-width: 100%; }
+      .login-card { padding: 1.75rem 1.25rem; }
+    }
+    @media (max-width: 500px) {
+      .role-cards { gap: 0.85rem; }
+    }
+  /* MODALS */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); display: none;
+    align-items: center; justify-content: center; z-index: 1000;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white; border-radius: 12px; padding: 2rem;
+    width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
+  
+    /* Mobile Compatibility */
+    @media (max-width: 768px) {
+      .sidebar { width: 60px !important; }
+      .sidebar-logo { display: none !important; }
+      .nav-icon { margin-right: 0 !important; }
+      .nav-item { padding: 0.8rem !important; justify-content: center !important; }
+      .nav-item span:not(.nav-icon) { display: none !important; }
+      .main { margin-left: 60px !important; width: calc(100% - 60px) !important; padding: 10px !important; }
+      .dashboard-grid, .grid { grid-template-columns: 1fr !important; }
+      .stat-card-row, .row { flex-direction: column !important; }
+      .custom-table { display: block !important; overflow-x: auto !important; white-space: nowrap !important; }
+      h2 { font-size: 1.5rem !important; }
+      .topbar { padding: 0 10px !important; }
+      .view { padding: 10px !important; }
+      .stats-grid { grid-template-columns: 1fr 1fr !important; }
+      .comp-tabs { overflow-x: auto !important; white-space: nowrap !important; }
+      .profile-card { flex-direction: column !important; }
+      #comms-split { flex-direction: column !important; }
+      .chat-window { height: 400px !important; }
+      .chat-sidebar { border-right: none !important; border-bottom: 1px solid var(--border) !important; max-height: 200px !important; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ═══════ INTRO SPLASH ═══════ -->
+<div id="intro">
+  <div class="intro-logo-wrap">
+    <img src="/static/images/urbano-logo.png" alt="Urbano Logo" class="intro-logo-img" />
+  </div>
+  <div class="intro-wordmark">URBANO</div>
+  <div class="intro-tagline">Urban Complaint Management System</div>
+</div>
+
+<!-- ═══════ PORTAL WRAPPER ═══════ -->
+<div id="portal-wrap">
+  <div class="phase-container">
+    <!-- ─── PHASE 1: ROLE SELECTOR ─── -->
+    <div class="phase active" id="phase-select">
+
+    <div class="portal-logo-header">
+      <div class="logo-container">
+        <img src="/static/images/urbano-logo.png" alt="Urbano" class="main-logo-img" style="width:80px;height:80px;" />
+      </div>
+      <div class="portal-brand-name">URBANO</div>
+      <div class="portal-brand-sub">Urban Complaint Management System</div>
+    </div>
+
+    <div class="role-select-title">Select your role to continue</div>
+
+    <div class="role-cards">
+
+      <!-- Manager -->
+      <div class="role-card" id="card-manager" onclick="selectRole('manager')" tabindex="0">
+        <div class="card-logo-wrap">
+          <img src="/static/images/urbano-logo.png" alt="Manager" class="card-logo-img" />
+          <div class="card-role-badge manager-badge-bg">🏛️</div>
+        </div>
+        <div class="card-role-name">Manager</div>
+        <div class="card-cta">Sign in as Manager <span>→</span></div>
+      </div>
+
+      <!-- Department -->
+      <div class="role-card" id="card-department" onclick="selectRole('department')" tabindex="0">
+        <div class="card-logo-wrap">
+          <img src="/static/images/urbano-logo.png" alt="Department" class="card-logo-img" />
+          <div class="card-role-badge dept-badge-bg">⚙️</div>
+        </div>
+        <div class="card-role-name">Department</div>
+        <div class="card-cta">Sign in as Department <span>→</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── PHASE 2: LOGIN FORM ─── -->
+  <div class="phase" id="phase-login">
+
+    <button class="login-back-btn" onclick="backToSelect()">← Back to role selection</button>
+
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:2rem;align-self:flex-start;">
+      <div class="logo-container">
+        <img src="/static/images/urbano-logo.png" alt="Urbano" class="main-logo-img" style="width:52px;height:52px;" id="login-logo-img" />
+        <div class="logo-role-badge" id="login-logo-badge"></div>
+      </div>
+      <div>
+        <div style="font-size:1.3rem;font-weight:900;color:#1e3535;letter-spacing:0.04em;text-transform:uppercase;">URBANO</div>
+        <div id="login-role-text" style="font-size:0.75rem;color:#7a9e9e;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;"></div>
+      </div>
+    </div>
+
+    <div class="login-card">
+      <span class="login-role-label" id="login-role-label">Manager Login</span>
+      <div class="login-title" id="login-title">Welcome back</div>
+      <div class="login-sub" id="login-sub">Sign in to your dashboard</div>
+
+      <div class="login-alert" id="login-alert"></div>
+
+      <!-- Step 1: Identifier -->
+      <div class="login-step active" id="step-id">
+        <div class="step-title">Your credentials</div>
+        <div class="step-hint" id="step1-hint">Enter your registered email or your ID.</div>
+        <div class="form-group">
+          <label for="identifier-input">Email / ID</label>
+          <input id="identifier-input" type="text" class="form-control"
+            placeholder="e.g. user@city.com or MGR-ABC123"
+            autocomplete="off" name="cc-urbano-id" />
+        </div>
+        <button class="btn-urbano" id="btn-send-otp" onclick="sendOtp()">Send OTP →</button>
+      </div>
+
+      <!-- Step 2: OTP -->
+      <div class="login-step" id="step-otp">
+        <div class="step-title">Enter OTP</div>
+        <div class="step-hint" id="step2-hint">A 6-digit code was sent to your email. It expires in 5 minutes.</div>
+        <div class="otp-group">
+          <input class="otp-box" id="otp0" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-box" id="otp1" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-box" id="otp2" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-box" id="otp3" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-box" id="otp4" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+          <input class="otp-box" id="otp5" type="text" maxlength="1" inputmode="numeric" autocomplete="off" />
+        </div>
+        <button class="btn-urbano" id="btn-verify" onclick="verifyOtp()">Verify & Sign In →</button>
+        <button class="btn-back-link" onclick="backToStep1()">← Enter a different credential</button>
+      </div>
+
+      <!-- Step 3: Registration Profile -->
+      <div class="login-step" id="step-register">
+        <div class="step-title">Complete your profile</div>
+        <div class="step-hint" id="step3-hint">Please provide your details to complete registration.</div>
+        
+        <div id="register-fields-manager" style="display:none;">
+          <div class="form-group"><label>Full Name</label><input type="text" id="reg-mgr-name" class="form-control" placeholder="Jane Doe" autocomplete="off" minlength="3" pattern="[a-zA-Z\s]+"></div>
+          <div class="form-group"><label>Mobile Number</label><input type="tel" id="reg-mgr-mobile" class="form-control" placeholder="1234567890" autocomplete="off" maxlength="10" pattern="\d{10}"></div>
+          <div class="form-group"><label>Age</label><input type="number" id="reg-mgr-age" class="form-control" placeholder="30" autocomplete="off"></div>
+          <div class="form-group"><label>Gender</label>
+            <select id="reg-mgr-gender" class="form-control">
+              <option value="">Select...</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Date of Birth</label><input type="date" id="reg-mgr-dob" class="form-control" autocomplete="off"></div>
+          <div class="form-group"><label>Address</label><textarea id="reg-mgr-address" class="form-control" rows="2"></textarea></div>
+        </div>
+
+        <div id="register-fields-department" style="display:none;">
+          <div class="form-group"><label>Department Name</label><input type="text" id="reg-dept-name" class="form-control" placeholder="Water Works" autocomplete="off" minlength="3"></div>
+          <div class="form-group"><label>Head Name</label><input type="text" id="reg-dept-head" class="form-control" placeholder="John Smith" autocomplete="off" minlength="3" pattern="[a-zA-Z\s]+"></div>
+          <div class="form-group"><label>Contact Number</label><input type="tel" id="reg-dept-contact" class="form-control" placeholder="1234567890" autocomplete="off" maxlength="10" pattern="\d{10}"></div>
+          <div class="form-group"><label>City</label><input type="text" id="reg-dept-city" class="form-control" placeholder="Mysore" autocomplete="off"></div>
+          <div class="form-group"><label>Operating Hours</label><input type="text" id="reg-dept-hours" class="form-control" placeholder="9 AM - 5 PM" autocomplete="off"></div>
+          <div class="form-group"><label>Emergency Contact</label><input type="tel" id="reg-dept-emergency" class="form-control" placeholder="9876543210" autocomplete="off" maxlength="10" pattern="\d{10}"></div>
+          <div class="form-group"><label>Address</label><textarea id="reg-dept-address" class="form-control" rows="2"></textarea></div>
+        </div>
+        
+        <button class="btn-urbano" id="btn-complete-reg" onclick="completeRegistration()">Complete Registration →</button>
+      </div>
+    </div>
+  </div>
+  </div><!-- end phase-container -->
+
+  
+    <!-- DETAILED FOOTER -->
+    <footer class="app-footer-detailed" style="margin-top:auto;">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-brand-title">URBANO</div>
+          <div class="footer-brand-desc">Empowering urban communities through transparent, efficient, and responsive complaint management.</div>
+        </div>
+        <div class="footer-links-group">
+          <div class="footer-col">
+            <div class="footer-col-title">Support</div>
+            <a href="javascript:void(0)" onclick="openFooterModal('help')">Help Center</a>
+            <a href="javascript:void(0)" onclick="openFooterModal('contact')">Contact Us</a>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title">Legal</div>
+            <a href="javascript:void(0)" onclick="openFooterModal('terms')">Terms & Conditions</a>
+            <a href="javascript:void(0)" onclick="openFooterModal('privacy')">Privacy Policy</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 Urbano. All rights reserved.</div>
+        <div>Version 1.0.0</div>
+      </div>
+    </footer>
+
+
+</div><!-- end portal-wrap -->
+
+<script>
+// ════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════
+let currentRole = null;  // 'manager' | 'department'
+let identifier  = '';
+let isSending   = false;
+let isVerifying = false;
+
+const ROLE_CONFIG = {
+  manager: {
+    label: 'Manager',
+    badgeClass: 'manager-badge',
+    badgeBg: '#3f8a8d',
+    badgeIcon: '🏛️',
+    idHint: 'Enter your registered email, Manager ID (MGR-XXXXXX), or mobile number.',
+    apiRole: 'Manager',
+    successPath: '/manager',
+    localKey: 'cc_manager_table_id',
+    storeFn: (data) => {
+      sessionStorage.setItem('cc_manager_table_id', data.manager_table_id);
+      sessionStorage.setItem('cc_manager_id', data.manager_id || '');
+      sessionStorage.setItem('cc_is_approved', data.is_approved ? '1' : '0');
+      sessionStorage.setItem('cc_role', 'Manager');
+    }
+  },
+  department: {
+    label: 'Department',
+    badgeClass: 'dept-badge',
+    badgeBg: '#2a6163',
+    badgeIcon: '⚙️',
+    idHint: 'Enter your registered department email or Department ID (DEPT-XXXXXX).',
+    apiRole: 'Department',
+    successPath: '/department',
+    localKey: 'cc_dept_table_id',
+    storeFn: (data) => {
+      sessionStorage.setItem('cc_dept_table_id', data.department_table_id);
+      sessionStorage.setItem('cc_dept_id', data.dept_id || '');
+      sessionStorage.setItem('cc_dept_is_approved', data.is_approved ? '1' : '0');
+      sessionStorage.setItem('cc_role', 'Department');
+    }
+  }
+};
+
+// ════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════
+window.addEventListener('load', () => {
+  // Intro → portal reveal
+  setTimeout(() => {
+    document.getElementById('intro').classList.add('fade-out');
+  }, 1800);
+  setTimeout(() => {
+    const el = document.getElementById('intro');
+    if (el) el.style.display = 'none';
+    // Check URL param for auto role selection
+    const params = new URLSearchParams(window.location.search);
+    const roleParam = params.get('role');
+    if (roleParam && ROLE_CONFIG[roleParam]) {
+      selectRole(roleParam);
+    }
+  }, 2000);
+
+  // Redirect if already logged in
+  if (sessionStorage.getItem('cc_manager_table_id')) { window.location.href = '/manager'; return; }
+  if (sessionStorage.getItem('cc_dept_table_id'))    { window.location.href = '/department'; return; }
+});
+
+// ════════════════════════════════════════════
+//  ROLE SELECTION → TRANSITION TO LOGIN
+// ════════════════════════════════════════════
+function selectRole(role) {
+  currentRole = role;
+  const cfg = ROLE_CONFIG[role];
+
+  // Configure login phase
+  document.getElementById('login-role-label').textContent = `${cfg.label} Login`;
+  document.getElementById('login-role-text').textContent = `${cfg.label} Portal`;
+  document.getElementById('step1-hint').textContent = cfg.idHint;
+
+  // Set role badge on login logo
+  const badge = document.getElementById('login-logo-badge');
+  badge.textContent = cfg.badgeIcon;
+  badge.className = `logo-role-badge ${cfg.badgeClass}`;
+  badge.style.background = cfg.badgeBg;
+  requestAnimationFrame(() => badge.classList.add('show'));
+
+  // Animate phase transition
+  const selectPhase = document.getElementById('phase-select');
+  selectPhase.classList.add('exit');
+  setTimeout(() => {
+    selectPhase.classList.remove('active', 'exit');
+    selectPhase.style.display = 'none';
+
+    const loginPhase = document.getElementById('phase-login');
+    loginPhase.style.display = 'flex';
+    requestAnimationFrame(() => loginPhase.classList.add('active'));
+    document.getElementById('identifier-input').focus();
+  }, 280);
+
+  // Reset form
+  document.getElementById('identifier-input').value = '';
+  showStep('step-id');
+  clearAlert();
+  isSending = false; isVerifying = false;
+}
+
+function backToSelect() {
+  currentRole = null;
+  identifier = '';
+  isSending = false; isVerifying = false;
+
+  const loginPhase = document.getElementById('phase-login');
+  loginPhase.classList.add('exit');
+  setTimeout(() => {
+    loginPhase.classList.remove('active', 'exit');
+    loginPhase.style.display = 'none';
+
+    const selectPhase = document.getElementById('phase-select');
+    selectPhase.style.display = 'flex';
+    requestAnimationFrame(() => selectPhase.classList.add('active'));
+  }, 280);
+
+  // Remove badge
+  const badge = document.getElementById('login-logo-badge');
+  badge.classList.remove('show');
+}
+
+function showStep(stepId, push = true) {
+  ['step-id', 'step-otp', 'step-register'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById(stepId).classList.add('active');
+  if (push) {
+    history.pushState({ step: stepId }, "", "#" + stepId);
+  }
+}
+
+window.addEventListener("popstate", (e) => {
+  if (e.state && e.state.step) {
+    showStep(e.state.step, false);
+  } else {
+    showStep('step-id', false);
+  }
+});
+
+function backToStep1() {
+  showStep('step-id');
+  clearOtp();
+  clearAlert();
+  isSending = false;
+}
+
+// ════════════════════════════════════════════
+//  OTP FLOW
+// ════════════════════════════════════════════
+async function sendOtp() {
+  if (isSending || !currentRole) return;
+  identifier = document.getElementById('identifier-input').value.trim();
+  if (!identifier) { showAlert('Please enter your Email or ID.', 'error'); return; }
+  clearAlert();
+  isSending = true;
+  const btn = document.getElementById('btn-send-otp');
+  btn.disabled = true; btn.textContent = 'Sending OTP…';
+
+  try {
+    const res = await fetch('/api/send_otp', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email: identifier })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showStep('step-otp');
+      document.getElementById('otp0').focus();
+    } else {
+      showAlert(data.error || 'Could not send OTP. Please try again.', 'error');
+      isSending = false;
+    }
+  } catch (e) {
+    showAlert('Cannot connect to server. Make sure Urbano is running.', 'error');
+    isSending = false;
+  }
+  btn.disabled = false; btn.textContent = 'Send OTP →';
+}
+
+async function verifyOtp() {
+  if (isVerifying || !currentRole) return;
+  const digits = Array.from({length:6}, (_,i) => document.getElementById(`otp${i}`).value).join('');
+  if (digits.length !== 6) { showAlert('Please enter all 6 OTP digits.', 'error'); return; }
+  clearAlert();
+  isVerifying = true;
+  const btn = document.getElementById('btn-verify');
+  btn.disabled = true; btn.textContent = 'Verifying…';
+
+  try {
+    const cfg = ROLE_CONFIG[currentRole];
+    const res = await fetch('/api/verify_otp', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email: identifier, otp: digits, role: cfg.apiRole })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (data.is_new) {
+        window.tempLoginData = data;
+        showStep('step-register');
+        document.getElementById('register-fields-manager').style.display = currentRole === 'manager' ? 'block' : 'none';
+        document.getElementById('register-fields-department').style.display = currentRole === 'department' ? 'block' : 'none';
+        showAlert('OTP verified! Please complete your profile to register.', 'success');
+        btn.disabled = false; btn.textContent = 'Verify & Sign In →';
+      } else {
+        cfg.storeFn(data);
+        showAlert('Success! Redirecting to your dashboard…', 'success');
+        setTimeout(() => { window.location.href = cfg.successPath; }, 700);
+      }
+    } else {
+      showAlert(data.error || 'Invalid OTP. Please try again.', 'error');
+      isVerifying = false; btn.disabled = false; btn.textContent = 'Verify & Sign In →';
+    }
+  } catch (e) {
+    showAlert('Server error. Please try again.', 'error');
+    isVerifying = false; btn.disabled = false; btn.textContent = 'Verify & Sign In →';
+  }
+}
+
+async function completeRegistration() {
+  const btn = document.getElementById('btn-complete-reg');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  clearAlert();
+
+  const data = window.tempLoginData;
+  const cfg = ROLE_CONFIG[currentRole];
+  
+  let endpoint = '';
+  let body = {};
+  
+  if (currentRole === 'manager') {
+    endpoint = '/api/manager/update_profile';
+    body = {
+      manager_table_id: data.manager_table_id,
+      name: document.getElementById('reg-mgr-name').value.trim(),
+      mobile_number: document.getElementById('reg-mgr-mobile').value.trim(),
+      age: document.getElementById('reg-mgr-age').value,
+      gender: document.getElementById('reg-mgr-gender').value,
+      dob: document.getElementById('reg-mgr-dob').value,
+      address: document.getElementById('reg-mgr-address').value.trim()
+    };
+    if (!body.name || !body.mobile_number) {
+      showAlert('Name and Mobile Number are required.', 'error');
+      btn.disabled = false; btn.textContent = 'Complete Registration →';
+      return;
+    }
+  } else if (currentRole === 'department') {
+    endpoint = '/api/department/update_profile';
+    body = {
+      dept_table_id: data.department_table_id,
+      name: document.getElementById('reg-dept-name').value.trim(),
+      head_name: document.getElementById('reg-dept-head').value.trim(),
+      contact_number: document.getElementById('reg-dept-contact').value.trim(),
+      assigned_city: document.getElementById('reg-dept-city').value.trim(),
+      operating_hours: document.getElementById('reg-dept-hours').value.trim(),
+      emergency_contact: document.getElementById('reg-dept-emergency').value.trim(),
+      address: document.getElementById('reg-dept-address').value.trim(),
+      number_of_employees: null // to be updated by admin later
+    };
+    if (!body.name || !body.head_name || !body.contact_number || !body.assigned_city) {
+      showAlert('Department Name, Head Name, and Contact Number are required.', 'error');
+      btn.disabled = false; btn.textContent = 'Complete Registration →';
+      return;
+    }
+  }
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const resData = await res.json();
+    if (resData.success) {
+      cfg.storeFn(data);
+      showAlert('Registration complete! Redirecting…', 'success');
+      setTimeout(() => { window.location.href = cfg.successPath; }, 700);
+    } else {
+      showAlert(resData.error || 'Failed to save profile.', 'error');
+      btn.disabled = false; btn.textContent = 'Complete Registration →';
+    }
+  } catch (e) {
+    showAlert('Server error. Please try again.', 'error');
+    btn.disabled = false; btn.textContent = 'Complete Registration →';
+  }
+}
+
+// ════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════
+function showAlert(msg, type) {
+  const el = document.getElementById('login-alert');
+  el.textContent = msg; el.className = `login-alert ${type}`;
+}
+function clearAlert() {
+  const el = document.getElementById('login-alert');
+  el.className = 'login-alert'; el.textContent = '';
+}
+function clearOtp() {
+  for (let i=0; i<6; i++) document.getElementById(`otp${i}`).value = '';
+}
+
+// OTP auto-tab + paste
+document.querySelectorAll('.otp-box').forEach((box, idx, all) => {
+  box.addEventListener('input', () => {
+    box.value = box.value.replace(/\D/, '');
+    if (box.value && idx < all.length - 1) all[idx + 1].focus();
+  });
+  box.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !box.value && idx > 0) all[idx - 1].focus();
+    if (e.key === 'Enter') verifyOtp();
+  });
+  box.addEventListener('paste', e => {
+    e.preventDefault();
+    const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+    pasted.split('').slice(0, 6).forEach((ch, i) => {
+      const el = document.getElementById(`otp${i}`); if (el) el.value = ch;
+    });
+    document.getElementById(`otp${Math.min(pasted.length, 5)}`).focus();
+  });
+});
+document.getElementById('identifier-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendOtp();
+});
+
+// Keyboard nav for role cards
+document.querySelectorAll('.role-card:not(.role-card--disabled)').forEach(card => {
+  card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') card.click(); });
+});
+
+function startOtpTimer(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = true;
+    let timeLeft = 15;
+    btn.textContent = `Resend OTP (${timeLeft}s)`;
+    const timer = setInterval(() => {
+        timeLeft -= 1;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.textContent = 'Resend OTP';
+            btn.disabled = false;
+        } else {
+            btn.textContent = `Resend OTP (${timeLeft}s)`;
+        }
+    }, 1000);
+}
+
+</script>
+
+  <!-- FOOTER MODAL -->
+  <div id="footer-modal" class="modal-overlay" style="z-index:9999;" onclick="if(event.target===this) document.getElementById('footer-modal').classList.remove('open')">
+    <div class="modal-box" style="max-width:550px;">
+      <div class="modal-title" id="fm-title">Title</div>
+      <div class="footer-modal-content" id="fm-content" style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1.5rem; color: var(--text); line-height: 1.6; font-size: 0.9rem;">
+        Content goes here...
+      </div>
+      <div class="modal-actions" style="justify-content:flex-end;">
+        <button class="btn btn-secondary" style="width:auto" onclick="document.getElementById('footer-modal').classList.remove('open')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openFooterModal(type) {
+      const modal = document.getElementById('footer-modal');
+      const title = document.getElementById('fm-title');
+      const content = document.getElementById('fm-content');
+      
+      if (type === 'help') {
+        title.textContent = 'Help Center';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">How to use the Dashboard</h3><p>Use the navigation menu to switch between views. You can view complaint details by clicking on any complaint card.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">FAQs</h3><p><strong>Q: How do I change my email?</strong><br>A: Click on the Email button in your profile panel and verify using the OTP sent to your new address.</p>';
+      } else if (type === 'contact') {
+        title.textContent = 'Contact Us';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Get in Touch</h3><p>If you are experiencing technical difficulties with the Urbano portal, please reach out to our IT support desk.</p><p><strong>Email:</strong> support@mysore.city<br><strong>Phone:</strong> +91 1800-URBANO-123<br><strong>Hours:</strong> Mon - Fri, 9:00 AM - 6:00 PM</p>';
+      } else if (type === 'terms') {
+        title.textContent = 'Terms & Conditions';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">1. Usage Policy</h3><p>This portal is intended solely for official municipal use. Unauthorized access is strictly prohibited and monitored.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">2. Data Accuracy</h3><p>You are responsible for ensuring that the status of complaints accurately reflects the real-world resolution state.</p>';
+      } else if (type === 'privacy') {
+        title.textContent = 'Privacy Policy & Copyright';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Data Handling</h3><p>All citizen data, including names, contact numbers, and addresses, are strictly confidential. Do not share this information outside of the official communication channels.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Copyright</h3><p>&copy; 2026 Mysore City Corporation. All rights reserved. System components and styling are proprietary.</p>';
+      }
+      modal.classList.add('open');
+    }
+  
+function startOtpTimer(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = true;
+    let timeLeft = 15;
+    btn.textContent = `Resend OTP (${timeLeft}s)`;
+    const timer = setInterval(() => {
+        timeLeft -= 1;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.textContent = 'Resend OTP';
+            btn.disabled = false;
+        } else {
+            btn.textContent = `Resend OTP (${timeLeft}s)`;
+        }
+    }, 1000);
+}
+
+</script>
+
+</body>
+</html>

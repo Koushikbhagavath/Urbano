@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urbano — Department Dashboard</title>
+  <meta name="description" content="Urbano Department Operator Dashboard." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    /* ── DEPARTMENT URBANO THEME OVERRIDES (teal, matching logo) ── */
+    :root {
+      --dept:       #3b8c8c;
+      --dept-dark:  #2a7070;
+      --dept-light: #d4eeee;
+      --dept-xlight:#f0faf8;
+    }
+
+    /* ── NOT APPROVED SCREEN ─────────────────── */
+    .pending-screen {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--dept-xlight); padding: 2rem; text-align: center;
+    }
+    .pending-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    .pending-title { font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: 0.5rem; }
+    .pending-sub { color: var(--text-muted); max-width: 380px; line-height: 1.7; margin-bottom: 1.5rem; }
+
+    /* ── SIDEBAR BLUE ACCENTS ────────────────── */
+    .sidebar-dept .sidebar-brand .brand-icon { background: var(--dept); }
+    .sidebar-dept .sidebar-brand .brand-role { color: var(--dept); }
+    .sidebar-dept .profile-role-label { color: var(--dept); }
+    .sidebar-dept .nav-item:hover { background: var(--dept-xlight); color: var(--dept-dark); }
+    .sidebar-dept .nav-item.active { background: var(--dept-light); color: var(--dept-dark); border-color: #93c5fd; }
+    .sidebar-dept .nav-badge { background: var(--dept); }
+    .sidebar-dept .profile-card:hover { background: var(--dept-xlight); border-color: #bfdbfe; }
+
+    /* ── STAT CARDS ──────────────────────────── */
+    .stats-bar {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+    }
+    .stat-card-value { font-size: 1.8rem; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 0.2rem; }
+    .stat-card-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
+    .stat-card.stat-pending .stat-card-value { color: var(--dept); }
+    .stat-card.stat-working .stat-card-value { color: var(--warning); }
+    .stat-card.stat-resolved .stat-card-value { color: var(--green); }
+    .stat-card.stat-return .stat-card-value { color: var(--danger); }
+
+    /* ── ACTION BUTTONS IN DETAIL PANEL ─────── */
+    .action-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-top: 1rem; }
+    .action-btn {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.7rem 1rem; border-radius: var(--radius-sm); font-size: 0.85rem;
+      font-weight: 700; cursor: pointer; border: 1.5px solid transparent;
+      font-family: 'Inter', sans-serif; transition: all 0.18s ease; outline: none;
+    }
+    .action-btn:active { transform: scale(0.97); }
+    .action-dispatch {
+      background: #e0f5f5; color: var(--dept); border-color: #a0d4d4;
+    }
+    .action-dispatch:hover { background: #c8eaea; box-shadow: 0 2px 8px rgba(59,140,140,0.2); }
+    .action-resolve {
+      background: var(--green-light); color: var(--green-dark); border-color: #86efac;
+    }
+    .action-resolve:hover { background: #bbf7d0; box-shadow: 0 2px 8px rgba(22,163,74,0.2); }
+    .action-delay {
+      background: var(--warning-light); color: var(--warning); border-color: #fde68a;
+    }
+    .action-delay:hover { background: #fef3c7; box-shadow: 0 2px 8px rgba(217,119,6,0.2); }
+    .action-return {
+      background: var(--danger-light); color: var(--danger); border-color: #fecaca;
+    }
+    .action-return:hover { background: #fee2e2; box-shadow: 0 2px 8px rgba(220,38,38,0.2); }
+
+    /* ── MODAL OVERLAY ───────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 500; display: none; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--white); border-radius: var(--radius-lg); padding: 2rem;
+      max-width: 480px; width: 100%; box-shadow: var(--shadow-lg);
+      animation: modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modalIn { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
+    .modal-title { font-size: 1.1rem; font-weight: 800; color: var(--text); margin-bottom: 0.3rem; }
+    .modal-sub { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 0.65rem; margin-top: 1.25rem; }
+    .modal-actions .btn { flex: 1; justify-content: center; }
+
+    /* ── RETURN CARD (manager view) ──────────── */
+    .return-card {
+      background: var(--white); border: 1.5px solid #fecaca; border-radius: var(--radius);
+      padding: 1.1rem 1.25rem; margin-bottom: 0.85rem;
+    }
+    .return-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.65rem; }
+    .return-reason-box {
+      background: var(--danger-light); border: 1px solid #fecaca; border-radius: var(--radius-sm);
+      padding: 0.75rem 0.9rem; font-size: 0.85rem; color: var(--danger); line-height: 1.6;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── HISTORY TIMELINE ────────────────────── */
+    .timeline { margin-top: 0.5rem; }
+    .timeline-item { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+    .timeline-dot-col { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dept); margin-top: 3px; flex-shrink: 0; }
+    .timeline-line { width: 2px; flex: 1; background: var(--dept-light); margin-top: 3px; }
+    .timeline-item:last-child .timeline-line { display: none; }
+    .timeline-content { flex: 1; }
+    .timeline-action { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+    .timeline-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .timeline-note {
+      font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.35rem;
+      background: var(--bg); border-radius: 6px; padding: 0.5rem 0.7rem; line-height: 1.55;
+      border-left: 3px solid var(--dept-light);
+    }
+
+    /* ── EMPTY STATE ─────────────────────────── */
+    .empty-state { text-align: center; padding: 3rem 2rem; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty-state p { font-size: 0.88rem; line-height: 1.6; }
+
+    /* ── BADGES: dept-specific ───────────────── */
+    .badge-working-dept { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .badge-return { background: var(--danger-light); color: var(--danger); border: 1px solid #fecaca; }
+
+    @media (max-width: 900px) {
+      .stats-bar { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .stats-bar { grid-template-columns: 1fr; }
+      .action-btn-grid { grid-template-columns: 1fr; }
+    }
+  
+/* Chat Widget */
+.chat-window {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 400px;
+    height: 550px;
+    background: #e5ddd5;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9999;
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+.chat-window.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.chat-header {
+    background: #075e54;
+    color: white;
+    padding: 1rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chat-messages {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    background-color: #f0f4f8;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.chat-messages::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 250px;
+    background-image: url('/static/images/urbano-logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+}
+.chat-bubble {
+    z-index: 1;
+    position: relative;
+    max-width: 80%;
+    padding: 0.6rem 1rem;
+    border-radius: 16px;
+    font-size: 0.85rem;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+.chat-bubble.sent {
+    background: #dcf8c6;
+    color: #303030;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+.chat-bubble.received {
+    background: #ffffff;
+    color: #303030;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+.chat-input-area {
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 0.5rem;
+}
+.chat-input-area input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    outline: none;
+}
+.chat-input-area button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+}
+
+  /* MODALS */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); display: none;
+    align-items: center; justify-content: center; z-index: 1000;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: white; border-radius: 12px; padding: 2rem;
+    width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; }
+  .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+        /* Mobile Compatibility (Responsive Design) */
+    @media (max-width: 1024px) {
+      .sidebar { width: 70px; }
+      .logo-wordmark, .admin-badge, .nav-section-label, .nav-badge, .sidebar-footer, .server-pulse { display: none; }
+      .nav-item { justify-content: center; padding: 0.8rem 0; }
+      .nav-item span:not(.nav-icon) { display: none; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; flex-direction: row; align-items: center; justify-content: flex-start; padding: 0.5rem; overflow-x: auto; overflow-y: hidden; z-index: 50; }
+      .sidebar-nav { display: flex; flex-direction: row; padding: 0; width: max-content; }
+      .nav-item { padding: 0.5rem 1rem; border-radius: 999px; border: none; margin: 0 0.2rem; }
+      .logo-row { display: none; }
+      
+      .main { width: 100%; overflow-y: auto; }
+      .topbar { padding: 0.75rem 1rem; }
+      
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .table-wrap, .custom-table-container { overflow-x: auto; }
+      table { min-width: 600px; }
+      
+      .comms-grid, #comms-split { grid-template-columns: 1fr; display: flex; flex-direction: column; height: auto; }
+      .chat-panel, .chat-window { height: 500px; margin-top: 1rem; }
+      .chat-sidebar { max-height: 200px; border-right: none; border-bottom: 1px solid var(--border); }
+      .comp-tabs { overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
+    }
+    
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .page-head { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+    }
+</style>
+
+<style>
+@keyframes appEntry {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+body {
+    animation: appEntry 0.6s ease-out forwards;
+}
+
+
+    /* Mobile Compatibility */
+    @media (max-width: 768px) {
+      .sidebar { width: 60px !important; }
+      .sidebar-logo { display: none !important; }
+      .nav-icon { margin-right: 0 !important; }
+      .nav-item { padding: 0.8rem !important; justify-content: center !important; }
+      .nav-item span:not(.nav-icon) { display: none !important; }
+      .main { margin-left: 60px !important; width: calc(100% - 60px) !important; padding: 10px !important; }
+      .dashboard-grid, .grid { grid-template-columns: 1fr !important; }
+      .stat-card-row, .row { flex-direction: column !important; }
+      .custom-table { display: block !important; overflow-x: auto !important; white-space: nowrap !important; }
+      h2 { font-size: 1.5rem !important; }
+      .topbar { padding: 0 10px !important; }
+      .view { padding: 10px !important; }
+      .stats-grid { grid-template-columns: 1fr 1fr !important; }
+      .comp-tabs { overflow-x: auto !important; white-space: nowrap !important; }
+      .profile-card { flex-direction: column !important; }
+      #comms-split { flex-direction: column !important; }
+      .chat-window { height: 400px !important; }
+      .chat-sidebar { border-right: none !important; border-bottom: 1px solid var(--border) !important; max-height: 200px !important; }
+    }
+</style>
+
+
+    <!-- Leaflet JS & CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+let chatOpen = false;
+let chatPollTimer = null;
+
+function toggleChat() {
+    chatOpen = !chatOpen;
+    document.getElementById('chat-window').classList.toggle('open', chatOpen);
+    if(chatOpen) {
+        pollMessages();
+        chatPollTimer = setInterval(pollMessages, 3000);
+    } else {
+        clearInterval(chatPollTimer);
+    }
+}
+
+async function pollMessages() {
+    const id = sessionStorage.getItem('cc_dept_table_id');
+    if(!id) return;
+    try {
+        const res = await fetch(`/api/messages/fetch?role1=department&id1=${id}&role2=admin&id2=1`);
+        const data = await res.json();
+        if(data.success) {
+            renderMessages(data.messages);
+        }
+    } catch(e) {}
+}
+
+function renderMessages(msgs) {
+    const container = document.getElementById('chat-messages');
+    if(!msgs.length) {
+        container.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:0.8rem;margin-top:auto;margin-bottom:auto;">Start a conversation with Admin.</div>';
+        return;
+    }
+    const html = msgs.map(m => {
+        const isMe = m.sender_role === 'department';
+        return `<div class="chat-bubble ${isMe ? 'sent' : 'received'}">${m.content}</div>`;
+    }).join('');
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if(!msg) return;
+    const id = sessionStorage.getItem('cc_dept_table_id');
+    if(!id) return;
+    input.value = '';
+    
+    // Optimistic UI
+    const container = document.getElementById('chat-messages');
+    container.innerHTML += `<div class="chat-bubble sent" style="opacity:0.7">${msg}</div>`;
+    container.scrollTop = container.scrollHeight;
+    
+    await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            sender_role: 'department', sender_id: id,
+            receiver_role: 'admin', receiver_id: 1,
+            content: msg
+        })
+    });
+    pollMessages();
+}
+
+</script>
+
+</head>
+<body>
+
+<!-- ═══ OLD PENDING SCREEN (kept for JS compat, hidden) ═══ -->
+<div id="pending-screen" style="display:none;"></div>
+
+<!-- ═══ MAIN DASHBOARD ═══ -->
+<div id="main-dashboard" class="dashboard-layout" style="display:none;">
+
+  <!-- ─── SIDEBAR ─── -->
+  <aside class="sidebar sidebar-dept" id="sidebar">
+    <div class="sidebar-header">
+      <!-- Brand -->
+      <div class="sidebar-brand">
+        <img src="/static/images/urbano-logo.png" alt="Urbano" style="width:32px;height:32px;object-fit:contain;border-radius:8px;" />
+        <div>
+          <div class="brand-name">URBANO</div>
+          <div class="brand-role">Department Portal</div>
+        </div>
+      </div>
+
+      <!-- Profile Card -->
+      <div class="profile-card" onclick="toggleProfile()" title="View / Edit Profile">
+        <div class="profile-avatar" id="sb-avatar">D</div>
+        <div style="flex:1;min-width:0;">
+          <div class="profile-name" id="sb-name">Loading…</div>
+          <div class="profile-role-label" id="sb-dept-id" style="font-size:0.7rem;"></div>
+          <div class="profile-id-label" id="sb-city"></div>
+        </div>
+        <span style="color:var(--text-muted);font-size:0.7rem;" id="profile-chevron">▼</span>
+      </div>
+    </div>
+
+    <!-- Expandable Profile Form -->
+    <div class="sidebar-profile-expanded" id="profile-panel">
+      <div style="font-size:0.8rem;font-weight:700;color:var(--text);margin-bottom:0.85rem;">Department Info</div>
+
+      <!-- Read-only fields -->
+      <div class="profile-form-field">
+        <label>Department Name</label>
+        <div class="view-val" id="pf-dept-name">—</div>
+      </div>
+      <div class="profile-form-field">
+        <label>Email</label>
+        <div class="locked-field"><span class="lock-icon">🔒</span><span id="pf-email">—</span></div>
+      </div>
+      <div class="profile-form-field">
+        <label>Department ID</label>
+        <div class="locked-field"><span class="lock-icon">🔒</span><span id="pf-dept-id">—</span></div>
+      </div>
+      <div class="profile-form-field">
+        <label>Assigned City</label>
+        <div class="locked-field"><span class="lock-icon">🔒</span><span id="pf-city">—</span></div>
+      </div>
+
+      <!-- Editable fields -->
+      <div id="profile-view-mode">
+        <div class="profile-form-field"><label>Head Name</label><div class="view-val" id="pf-head-name">—</div></div>
+        <div class="profile-form-field"><label>Contact Number</label><div class="view-val" id="pf-contact">—</div></div>
+        <div class="profile-form-field"><label>Operating Hours</label><div class="view-val" id="pf-operating-hours">—</div></div>
+        <div class="profile-form-field"><label>Emergency Contact</label><div class="view-val" id="pf-emergency-contact">—</div></div>
+        <div class="profile-form-field"><label>Address</label><div class="view-val" id="pf-address">—</div></div>
+        <div class="profile-form-field"><label>No. of Employees</label><div class="view-val" id="pf-employees">—</div></div>
+        <div class="profile-edit-btn-row">
+          <button class="btn btn-sm" style="background:var(--dept);color:#fff;border-color:var(--dept);flex:1;" onclick="enterEditMode()">Edit Info</button>
+          <button class="btn btn-sm btn-secondary" onclick="openEmailModal()" style="flex:1;">Change Email</button>
+        </div>
+      </div>
+
+      <div id="profile-edit-mode" style="display:none;">
+        <div class="form-group"><label>Head Name</label><input id="edit-head-name" type="text" class="form-control" /></div>
+        <div class="form-group"><label>Contact Number</label><input id="edit-contact" type="text" class="form-control" placeholder="+91 XXXXX XXXXX" /></div>
+        <div class="form-group"><label>Operating Hours</label><input id="edit-operating-hours" type="text" class="form-control" placeholder="9 AM - 5 PM" /></div>
+        <div class="form-group"><label>Emergency Contact</label><input id="edit-emergency-contact" type="text" class="form-control" placeholder="9876543210" /></div>
+        <div class="form-group"><label>Address</label><textarea id="edit-address" class="form-control" rows="2"></textarea></div>
+        <div class="form-group"><label>No. of Employees</label><input id="edit-employees" type="number" class="form-control" /></div>
+        <div class="profile-edit-btn-row">
+          <button class="btn btn-sm" style="background:var(--dept);color:#fff;border-color:var(--dept);flex:1;" onclick="saveProfile()">Save</button>
+          <button class="btn btn-sm btn-secondary" onclick="cancelEdit()">Cancel</button>
+        </div>
+        <div id="profile-save-msg" class="alert hidden" style="margin-top:0.5rem;font-size:0.8rem;"></div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="sidebar-nav-section" id="sidebar-nav-section">
+      <div class="sidebar-nav-label">Navigation</div>
+      <a class="nav-item active" id="nav-active" onclick="switchTab('active')"><span class="nav-icon">📋</span><span>Assigned/Pending</span><span class="nav-badge" id="badge-active">0</span></a>
+      <div class="nav-item" id="nav-working" onclick="switchTab('working')">
+        <span class="nav-icon">🚗</span> Working
+        <span class="nav-badge" id="badge-working" style="background:#eab308;">0</span>
+      </div>
+      <div class="nav-item" id="nav-resolved" onclick="switchTab('resolved')">
+        <span class="nav-icon">✅</span> Resolved
+        <span class="nav-badge" id="badge-resolved" style="background:#3d9450;">0</span>
+      </div>
+      <div class="nav-item" id="nav-return" onclick="switchTab('return_pending')">
+        <span class="nav-icon">↩️</span> Return Requests
+        <span class="nav-badge" id="badge-return" style="background:#dc2626;">0</span>
+      </div>
+      <div class="nav-item" id="nav-all" onclick="switchTab('all')">
+        <span class="nav-icon">📁</span> All Complaints
+        <span class="nav-badge" id="badge-all" style="background:#6366f1;">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary btn-sm" onclick="toggleChat()" style="width:100%; margin-bottom:0.75rem; background:var(--primary); color:white; border:none;">💬 Admin Support</button>
+      <button class="btn btn-secondary btn-sm" onclick="logout()" style="width:100%;">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN CONTENT ─── -->
+  <div class="main-content">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <h2 class="section-title" id="topbar-title">Assigned/Pending Complaints</h2>
+        <div class="topbar-subtitle" id="topbar-subtitle">Manage complaints assigned/pending in your department</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-secondary btn-sm" onclick="loadComplaints()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area">
+
+      <!-- Pending Banner (shown to unapproved depts inside dashboard) -->
+      <div id="pending-banner" style="display:none;margin-bottom:1.5rem;">
+        <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:1.25rem 1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+          <div style="font-size:2rem;">⏳</div>
+          <div>
+            <div style="font-size:1rem;font-weight:800;color:#92400e;margin-bottom:0.3rem;">Awaiting Admin Approval</div>
+            <div style="font-size:0.85rem;color:#78350f;line-height:1.65;">
+              Your department account is pending review. You can fill in your department profile on the left sidebar now — 
+              complaint management will be unlocked once the admin approves and assigns a city to your department.<br/>
+              <strong>Note:</strong> Accounts not approved within 24 hours are automatically removed.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="stats-bar" id="stats-bar">
+        <div class="stat-card stat-pending" onclick="switchTab('active')" style="cursor:pointer;" title="Click to view assigned/pending complaints">
+          <div class="stat-card-value" id="stat-active">–</div>
+          <div class="stat-card-label">📋 Assigned/Pending</div>
+        </div>
+        <div class="stat-card stat-working" onclick="switchTab('working')" style="cursor:pointer;" title="Click to view working complaints">
+          <div class="stat-card-value" id="stat-working">–</div>
+          <div class="stat-card-label">🚗 Working</div>
+        </div>
+        <div class="stat-card stat-resolved" onclick="switchTab('resolved')" style="cursor:pointer;" title="Click to view resolved complaints">
+          <div class="stat-card-value" id="stat-resolved">–</div>
+          <div class="stat-card-label">✅ Resolved</div>
+        </div>
+        <div class="stat-card stat-return" onclick="switchTab('return_pending')" style="cursor:pointer;" title="Click to view return requests">
+          <div class="stat-card-value" id="stat-return">–</div>
+          <div class="stat-card-label">↩️ Return Pending</div>
+        </div>
+        <div class="stat-card stat-all" onclick="switchTab('all')" style="cursor:pointer;" title="Click to view all complaints">
+          <div class="stat-card-value" id="stat-all">–</div>
+          <div class="stat-card-label">📁 All Complaints</div>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="search-bar" id="search-bar-wrap">
+        <input class="search-input" id="search-input" type="text" placeholder="Search complaints…" oninput="filterCards()" />
+      </div>
+
+      <!-- Complaint Grid -->
+      <div id="complaints-loading" style="text-align:center;padding:3rem;color:var(--text-muted);">Loading complaints…</div>
+      <div class="complaint-grid" id="complaint-grid" style="display:none;"></div>
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-icon">📭</div>
+        <p>No complaints in this category.</p>
+      </div>
+
+    </div>
+
+    <!-- Global Footer -->
+    
+    <!-- DETAILED FOOTER -->
+    <footer class="app-footer-detailed" style="margin-top:auto;">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-brand-title">URBANO</div>
+          <div class="footer-brand-desc">Empowering urban communities through transparent, efficient, and responsive complaint management.</div>
+        </div>
+        <div class="footer-links-group">
+          <div class="footer-col">
+            <div class="footer-col-title">Support</div>
+            <a style="cursor: pointer;" onclick="openFooterModal('help')">Help Center</a>
+            <a style="cursor: pointer;" onclick="openFooterModal('contact')">Contact Us</a>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-title">Legal</div>
+            <a style="cursor: pointer;" onclick="openFooterModal('terms')">Terms & Conditions</a>
+            <a style="cursor: pointer;" onclick="openFooterModal('privacy')">Privacy Policy</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 Urbano. All rights reserved.</div>
+        <div>Version 1.0.0</div>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+<!-- ─── DETAIL OVERLAY ─── -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-panel">
+    <!-- Header -->
+    <div class="detail-header">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.72rem;font-family:monospace;color:var(--dept);background:var(--dept-light);padding:0.18rem 0.5rem;border-radius:4px;display:inline-block;margin-bottom:0.35rem;" id="d-id">#000</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text);line-height:1.3;" id="d-title">Complaint Title</div>
+      </div>
+      <button class="btn btn-icon btn-ghost" onclick="closeDetail()" style="flex-shrink:0;">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:1.1rem 1.25rem;flex:1;overflow-y:auto;">
+
+      <!-- Badges -->
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <span class="badge" id="d-status-badge">—</span>
+      </div>
+
+      <!-- Info Grid -->
+      <div class="info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;margin-bottom:1.1rem;">
+        <div class="info-item"><div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">City</div><div id="d-city" style="font-size:0.88rem;font-weight:600;color:var(--text);">—</div></div>
+        <div class="info-item"><div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">Filed On</div><div id="d-filed" style="font-size:0.88rem;font-weight:600;color:var(--text);">—</div></div>
+        <div class="info-item"><div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">Assigned On</div><div id="d-assigned" style="font-size:0.88rem;font-weight:600;color:var(--text);">—</div></div>
+        <div class="info-item" style="grid-column:1/-1;"><div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">📍 Location</div><div id="d-location" style="font-size:0.88rem;font-weight:600;color:var(--text);">—</div></div>
+      </div>
+
+      <!-- User Details -->
+      <div style="background:var(--dept-xlight);border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:0.85rem 1rem;margin-bottom:1rem;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--dept);margin-bottom:0.6rem;text-transform:uppercase;letter-spacing:0.06em;">👤 Filed By</div>
+        <div class="info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div><div style="font-size:0.68rem;color:var(--text-muted);font-weight:600;">Name</div><div id="d-user-name" style="font-size:0.85rem;font-weight:600;">—</div></div>
+          <div><div style="font-size:0.68rem;color:var(--text-muted);font-weight:600;">Mobile</div><div id="d-user-mobile" style="font-size:0.85rem;font-weight:600;">—</div></div>
+          <div style="grid-column:1/-1;"><div style="font-size:0.68rem;color:var(--text-muted);font-weight:600;">Email</div><div id="d-user-email" style="font-size:0.85rem;font-weight:600;">—</div></div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Description</div>
+        <div id="d-desc" style="font-size:0.88rem;color:var(--text-secondary);line-height:1.65;background:var(--bg);border-radius:6px;padding:0.75rem;"></div>
+      </div>
+
+      <!-- Map Section -->
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Location Map</div>
+        <div style="font-size: 0.85rem; margin-bottom: 0.5rem; color: #64748b;">
+          Lat: <span id="dc-lat" style="font-weight: 600;">--</span>, 
+          Lng: <span id="dc-lng" style="font-weight: 600;">--</span>
+        </div>
+        <div id="dc-map-container" style="height: 200px; border-radius: 8px; border: 1px solid #e2e8f0; display: none;"></div>
+        <div id="dc-map-error" style="display: none; padding: 1rem; text-align: center; color: #64748b; border: 1px dashed #cbd5e1; border-radius: 8px;">
+          Location not provided for this complaint.
+        </div>
+      </div>
+
+      <!-- Media -->
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Media Attached</div>
+        <div id="d-media" style="display:flex;gap:0.75rem;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Action Buttons (only for active tab) -->
+      <div id="action-buttons-section" style="margin-bottom:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.6rem;">Actions</div>
+        <div class="action-btn-grid">
+          <button class="action-btn action-dispatch" id="btn-dispatch" onclick="openModal('Dispatch')">🚗 Dispatch Team</button>
+          <button class="action-btn action-resolve" id="btn-resolve" onclick="openModal('Resolve')">✅ Mark Resolved</button>
+          <button class="action-btn action-delay" id="btn-delay" onclick="openModal('Delay')">⏳ Report Delay</button>
+          <button class="action-btn action-return" id="btn-return" onclick="openModal('Return')">↩️ Return to Manager</button>
+        </div>
+      </div>
+
+      <!-- History Timeline -->
+      <div>
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem;">Status History</div>
+        <div class="timeline" id="d-timeline"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── ACTION MODAL ─── -->
+<div class="modal-overlay" id="action-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Action</div>
+    <div class="modal-sub" id="modal-sub"></div>
+
+    <!-- Dispatch / Delay / Return inputs -->
+    <div id="modal-note-section">
+      <div class="form-group">
+        <label id="modal-note-label">Note / Details</label>
+        <textarea id="modal-note" class="form-control" rows="3" placeholder="Enter note…"></textarea>
+      </div>
+    </div>
+
+    <!-- Delay: expected date -->
+    <div id="modal-date-section" style="display:none;">
+      <div class="form-group">
+        <label>Expected Resolution Date</label>
+        <input id="modal-date" type="date" class="form-control" />
+      </div>
+    </div>
+
+    <!-- Resolve: no note needed, show confirmation text -->
+    <div id="modal-resolve-section" style="display:none;padding:1rem;background:var(--green-xlight);border-radius:var(--radius-sm);font-size:0.88rem;color:var(--green-dark);border:1px solid #bbf7d0;line-height:1.6;">
+      ✅ This will mark the complaint as <strong>Resolved</strong> and automatically send an email notification to the person who filed it. No note is required.
+    </div>
+
+    <div id="modal-alert" class="alert hidden" style="margin-top:0.75rem;font-size:0.83rem;"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" id="modal-confirm-btn" onclick="submitAction()">Confirm</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ EMAIL UPDATE MODAL ═══ -->
+<div class="modal-overlay" id="email-modal" onclick="if(event.target===this)closeEmailModal()">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-title">📧 Change Email Address</div>
+    <div class="modal-sub">Enter your new email address. We'll send a verification OTP to confirm the change.</div>
+    <div id="email-modal-alert" class="alert hidden" style="margin-bottom:0.75rem;font-size:0.83rem;"></div>
+
+    <div id="email-step-new">
+      <div class="form-group">
+        <label>New Email Address</label>
+        <input id="email-new-input" type="email" class="form-control" placeholder="newdept@city.com" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeEmailModal()">Cancel</button>
+        <button class="btn" id="email-send-otp-btn" onclick="deptEmailSendOtp()" style="background:#3b8c8c;border-color:#3b8c8c;">Send OTP →</button>
+      </div>
+    </div>
+
+    <div id="email-step-otp" style="display:none;">
+      <div style="font-size:0.83rem;color:#7a9e9e;margin-bottom:1rem;">Enter the 6-digit OTP sent to your new email address.</div>
+      <div class="otp-group">
+        <input class="otp-digit dept-otp" type="text" maxlength="1" inputmode="numeric" />
+        <input class="otp-digit dept-otp" type="text" maxlength="1" inputmode="numeric" />
+        <input class="otp-digit dept-otp" type="text" maxlength="1" inputmode="numeric" />
+        <input class="otp-digit dept-otp" type="text" maxlength="1" inputmode="numeric" />
+        <input class="otp-digit dept-otp" type="text" maxlength="1" inputmode="numeric" />
+        <input class="otp-digit dept-otp" type="text" maxlength="1" inputmode="numeric" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="emailBackToStep1()">Back</button>
+        <button class="btn" id="email-verify-btn" onclick="deptEmailVerify()" style="background:#3b8c8c;border-color:#3b8c8c;">Verify &amp; Update</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+const state = {
+  deptTableId: sessionStorage.getItem('cc_dept_table_id'),
+  deptId: sessionStorage.getItem('cc_dept_id'),
+  isApproved: sessionStorage.getItem('cc_dept_is_approved') === '1',
+  profile: null,
+  complaints: [],
+  currentComplaint: null,
+  currentTab: 'active',
+  pendingAction: null
+};
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  if (!state.deptTableId) { window.location.href = '/'; return; }
+
+  await loadProfile();
+
+  // Always show the main dashboard — profile can be filled even before approval
+  document.getElementById('main-dashboard').style.display = 'flex';
+
+  if (!state.isApproved) {
+    // Show pending banner in the content area; hide complaint sections
+    document.getElementById('pending-banner').style.display = 'block';
+    document.getElementById('stats-bar').style.display = 'none';
+    document.getElementById('search-bar-wrap').style.display = 'none';
+    document.getElementById('complaints-loading').style.display = 'none';
+    document.getElementById('sidebar-nav-section').style.display = 'none';
+    // Auto-open profile panel so they can fill it
+    const panel = document.getElementById('profile-panel');
+    panel.classList.add('open');
+    document.getElementById('profile-chevron').textContent = '▲';
+    return;
+  }
+  await loadComplaints();
+});
+
+// ═══════════════════════════════════════════════
+//  PROFILE
+// ═══════════════════════════════════════════════
+async function loadProfile() {
+  try {
+    const res = await fetch(`/api/department/profile?dept_table_id=${state.deptTableId}&_t=${Date.now()}`);
+    const data = await res.json();
+    if (data.success) {
+      state.profile = data.profile;
+      state.isApproved = !!data.profile.is_approved;
+      sessionStorage.setItem('cc_dept_is_approved', state.isApproved ? '1' : '0');
+      renderProfile(data.profile);
+    }
+  } catch (e) { console.error('Profile load failed', e); }
+}
+
+function renderProfile(p) {
+  const initials = (p.name || 'D').charAt(0).toUpperCase();
+  document.getElementById('sb-avatar').textContent = initials;
+  document.getElementById('sb-name').textContent = p.name || 'Unknown Dept';
+  document.getElementById('sb-dept-id').textContent = p.dept_id || 'Pending ID';
+  document.getElementById('sb-city').textContent = p.assigned_city ? `📍 ${p.assigned_city}` : 'No city assigned';
+
+  document.getElementById('pf-dept-name').textContent = p.name || '—';
+  document.getElementById('pf-email').textContent = p.email || '—';
+  document.getElementById('pf-dept-id').textContent = p.dept_id || 'Pending approval';
+  document.getElementById('pf-city').textContent = p.assigned_city || 'Not assigned yet';
+  document.getElementById('pf-head-name').textContent = p.head_name || '—';
+  document.getElementById('pf-contact').textContent = p.contact_number || '—';
+  document.getElementById('pf-operating-hours').textContent = p.operating_hours || '—';
+  document.getElementById('pf-emergency-contact').textContent = p.emergency_contact || '—';
+  document.getElementById('pf-address').textContent = p.address || '—';
+  document.getElementById('pf-employees').textContent = p.number_of_employees != null ? p.number_of_employees : '—';
+}
+
+function toggleProfile() {
+  const panel = document.getElementById('profile-panel');
+  const chev = document.getElementById('profile-chevron');
+  panel.classList.toggle('open');
+  chev.textContent = panel.classList.contains('open') ? '▲' : '▼';
+}
+
+function enterEditMode() {
+  const p = state.profile || {};
+  document.getElementById('edit-head-name').value = p.head_name || '';
+  document.getElementById('edit-contact').value = p.contact_number || '';
+  document.getElementById('edit-operating-hours').value = p.operating_hours || '';
+  document.getElementById('edit-emergency-contact').value = p.emergency_contact || '';
+  document.getElementById('edit-address').value = p.address || '';
+  document.getElementById('edit-employees').value = p.number_of_employees || '';
+  document.getElementById('profile-view-mode').style.display = 'none';
+  document.getElementById('profile-edit-mode').style.display = 'block';
+}
+function cancelEdit() {
+  document.getElementById('profile-view-mode').style.display = 'block';
+  document.getElementById('profile-edit-mode').style.display = 'none';
+  document.getElementById('profile-save-msg').classList.add('hidden');
+}
+async function saveProfile() {
+  const msg = document.getElementById('profile-save-msg');
+  try {
+    const res = await fetch('/api/department/update_profile', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        dept_table_id: state.deptTableId,
+        head_name: document.getElementById('edit-head-name').value,
+        contact_number: document.getElementById('edit-contact').value,
+        operating_hours: document.getElementById('edit-operating-hours').value,
+        emergency_contact: document.getElementById('edit-emergency-contact').value,
+        address: document.getElementById('edit-address').value,
+        number_of_employees: document.getElementById('edit-employees').value || null
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      msg.className = 'alert alert-success'; msg.textContent = '✓ Profile updated!';
+      msg.classList.remove('hidden');
+      await loadProfile();
+      setTimeout(() => cancelEdit(), 1200);
+    } else {
+      msg.className = 'alert alert-error'; msg.textContent = data.error || 'Update failed';
+      msg.classList.remove('hidden');
+    }
+  } catch (e) { msg.className = 'alert alert-error'; msg.textContent = 'Server error'; msg.classList.remove('hidden'); }
+}
+
+// ═══════════════════════════════════════════════
+//  EMAIL CHANGE
+// ═══════════════════════════════════════════════
+let deptEmailOtpSending = false;
+
+function openEmailModal() {
+  document.getElementById('email-step-new').style.display = 'block';
+  document.getElementById('email-step-otp').style.display = 'none';
+  document.getElementById('email-new-input').value = '';
+  document.getElementById('email-modal-alert').classList.add('hidden');
+  document.querySelector('.modal-overlay#email-modal').classList.add('open');
+  // wire OTP box navigation
+  document.querySelectorAll('.dept-otp').forEach((box, i, boxes) => {
+    box.value = '';
+    box.addEventListener('input', () => {
+      if (box.value && i < boxes.length - 1) boxes[i+1].focus();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !box.value && i > 0) boxes[i-1].focus();
+    });
+  });
+}
+
+function closeEmailModal() {
+  document.querySelector('.modal-overlay#email-modal').classList.remove('open');
+}
+
+async function deptEmailSendOtp() {
+  if (deptEmailOtpSending) return;
+  const email = document.getElementById('email-new-input').value.trim();
+  const alertEl = document.getElementById('email-modal-alert');
+  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    alertEl.className = 'alert alert-error'; alertEl.textContent = 'Please enter a valid email address.';
+    alertEl.classList.remove('hidden'); return;
+  }
+  deptEmailOtpSending = true;
+  const btn = document.getElementById('email-send-otp-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const res = await fetch('/api/send_otp', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, role: 'department', purpose: 'email_change' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      state._newEmail = email;
+      document.getElementById('email-step-new').style.display = 'none';
+      document.getElementById('email-step-otp').style.display = 'block';
+      document.querySelectorAll('.dept-otp')[0].focus();
+      alertEl.classList.add('hidden');
+    } else {
+      alertEl.className = 'alert alert-error'; alertEl.textContent = data.error || 'Failed to send OTP.';
+      alertEl.classList.remove('hidden');
+    }
+  } catch(e) {
+    alertEl.className = 'alert alert-error'; alertEl.textContent = 'Server error.';
+    alertEl.classList.remove('hidden');
+  }
+  btn.disabled = false; btn.textContent = 'Send OTP →';
+  deptEmailOtpSending = false;
+}
+
+function emailBackToStep1() {
+  document.getElementById('email-step-new').style.display = 'block';
+  document.getElementById('email-step-otp').style.display = 'none';
+}
+
+async function deptEmailVerify() {
+  const otp = Array.from(document.querySelectorAll('.dept-otp')).map(b => b.value).join('');
+  const alertEl = document.getElementById('email-modal-alert');
+  if (otp.length < 6) {
+    alertEl.className = 'alert alert-error'; alertEl.textContent = 'Please enter all 6 OTP digits.';
+    alertEl.classList.remove('hidden'); return;
+  }
+  const btn = document.getElementById('email-verify-btn');
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  try {
+    const res = await fetch('/api/department/update_email', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ dept_table_id: parseInt(state.deptTableId), new_email: state._newEmail, otp })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeEmailModal();
+      toast('✓ Email updated successfully!', 'success');
+      await loadProfile();
+    } else {
+      alertEl.className = 'alert alert-error'; alertEl.textContent = data.error || 'OTP verification failed.';
+      alertEl.classList.remove('hidden');
+    }
+  } catch(e) {
+    alertEl.className = 'alert alert-error'; alertEl.textContent = 'Server error.';
+    alertEl.classList.remove('hidden');
+  }
+  btn.disabled = false; btn.textContent = 'Verify & Update';
+}
+
+// ═══════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════
+//  COMPLAINTS
+// ═══════════════════════════════════════════════
+async function loadComplaints() {
+  document.getElementById('complaints-loading').style.display = 'block';
+  document.getElementById('complaint-grid').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/department/complaints?dept_table_id=${state.deptTableId}&filter=${state.currentTab}`);
+    const data = await res.json();
+    if (data.success) {
+      state.complaints = data.complaints;
+      updateStats(data.counts);
+      renderComplaints(data.complaints);
+    }
+  } catch (e) { console.error(e); }
+  document.getElementById('complaints-loading').style.display = 'none';
+}
+
+function updateStats(counts) {
+  if (!counts) return;
+  const active = parseInt(counts.active) || 0;
+  const working = parseInt(counts.working) || 0;
+  const resolved = parseInt(counts.resolved) || 0;
+  const returnPending = parseInt(counts.return_pending) || 0;
+  const all = parseInt(counts.all_complaints) || 0;
+
+  document.getElementById('stat-active').textContent = active;
+  document.getElementById('stat-working').textContent = working;
+  document.getElementById('stat-resolved').textContent = resolved;
+  document.getElementById('stat-return').textContent = returnPending;
+  document.getElementById('stat-all').textContent = all;
+
+  document.getElementById('badge-active').textContent = active;
+  document.getElementById('badge-working').textContent = working;
+  document.getElementById('badge-resolved').textContent = resolved;
+  document.getElementById('badge-return').textContent = returnPending;
+  document.getElementById('badge-all').textContent = all;
+}
+
+function renderComplaints(list) {
+  const grid = document.getElementById('complaint-grid');
+  const empty = document.getElementById('empty-state');
+  if (!list || list.length === 0) {
+    grid.style.display = 'none'; empty.style.display = 'block'; return;
+  }
+  grid.innerHTML = list.map(c => `
+    <div class="complaint-card" onclick="openDetail(${c.id})">
+      <div class="card-header">
+        <span class="card-id">#${c.id}</span>
+        <span class="badge ${getBadgeClass(c.status)}">${c.status && c.status.startsWith('Task Assigned') ? 'Assigned' : esc(c.status)}</span>
+      </div>
+      <div class="card-title">${esc(c.title_en || c.title)}</div>
+      <div class="card-meta">📍 ${esc(c.address)}${c.landmark ? ', ' + esc(c.landmark) : ''}</div>
+      <div class="card-meta">🏙️ ${esc(c.city)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.65rem;font-size:0.75rem;color:var(--text-muted);">
+        <span>Filed: ${fmt(c.created_at)}</span>
+        ${c.assigned_at ? `<span>Assigned: ${fmt(c.assigned_at)}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+  grid.style.display = 'grid'; empty.style.display = 'none';
+}
+
+function getBadgeClass(status) {
+  if (!status) return 'badge-registered';
+  if (status === 'Resolved') return 'badge-resolved';
+  if (status === 'Working') return 'badge-working';
+  if (status === 'Return Pending') return 'badge-return';
+  if (status.startsWith('Task Assigned')) return 'badge-assigned';
+  return 'badge-registered';
+}
+
+function filterCards() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = state.complaints.filter(c =>
+    (c.title||'').toLowerCase().includes(q) ||
+    (c.address||'').toLowerCase().includes(q) ||
+    (c.city||'').toLowerCase().includes(q) ||
+    String(c.id).includes(q)
+  );
+  renderComplaints(filtered);
+}
+
+// ═══════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════
+function switchTab(tab, push = true) {
+  state.currentTab = tab;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`nav-${tab === 'return_pending' ? 'return' : tab}`).classList.add('active');
+
+  const titles = { active: 'Assigned/Pending Complaints', working: 'Working Complaints', resolved: 'Resolved Complaints', return_pending: 'Return Requests', all: 'All Complaints' };
+  const subs = { active: 'Manage new complaints assigned/pending in your department', working: 'Complaints your team is currently working on', resolved: 'Complaints successfully resolved by your team', return_pending: 'Complaints you requested to return - awaiting manager decision', all: 'All complaints handled by your department' };
+  document.getElementById('topbar-title').textContent = titles[tab];
+  document.getElementById('topbar-subtitle').textContent = subs[tab];
+  document.getElementById('search-input').value = '';
+  
+  if (push) {
+    history.pushState({ tab: tab }, "", "#" + tab);
+  }
+  
+  loadComplaints();
+}
+
+window.addEventListener("popstate", (e) => {
+  if (!sessionStorage.getItem('cc_role')) {
+    window.location.replace('/');
+    return;
+  }
+  if (e.state && e.state.tab) {
+    switchTab(e.state.tab, false);
+  } else {
+    switchTab('active', false);
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  DETAIL PANEL
+// ═══════════════════════════════════════════════
+async function openDetail(id) {
+  const c = state.complaints.find(x => x.id === id);
+  if (!c) return;
+  state.currentComplaint = c;
+
+  document.getElementById('d-id').textContent = `#${c.id}`;
+  document.getElementById('d-title').textContent = c.title || '—';
+  document.getElementById('d-city').textContent = c.city || '—';
+  document.getElementById('d-filed').textContent = fmt(c.created_at);
+  document.getElementById('d-assigned').textContent = c.assigned_at ? fmt(c.assigned_at) : '—';
+  document.getElementById('d-location').textContent = [c.address, c.landmark, c.city].filter(Boolean).join(', ');
+  document.getElementById('d-desc').textContent = c.details || '—';
+  document.getElementById('d-user-name').textContent = c.user_name || '—';
+  document.getElementById('d-user-mobile').textContent = c.user_mobile || '—';
+  document.getElementById('d-user-email').textContent = c.user_email || '—';
+
+  const badge = document.getElementById('d-status-badge');
+  badge.className = `badge ${getBadgeClass(c.status)}`;
+  badge.textContent = c.status && c.status.startsWith('Task Assigned') ? 'Assigned' : c.status;
+
+  // Toggle action buttons based on tab and status
+  const actionsSec = document.getElementById('action-buttons-section');
+  if (state.currentTab === 'active' || state.currentTab === 'working') {
+    actionsSec.style.display = 'block';
+    
+    // Check if team is dispatched
+    const isWorking = c.status === 'Working';
+    const dispatchBtn = document.getElementById('btn-dispatch');
+    const resolveBtn = document.getElementById('btn-resolve');
+    const returnBtn = document.getElementById('btn-return');
+
+    if (isWorking) {
+      if (dispatchBtn) dispatchBtn.style.display = 'none';
+      if (resolveBtn) resolveBtn.style.display = 'block';
+      if (returnBtn) returnBtn.style.display = 'none';
+    } else {
+      if (dispatchBtn) dispatchBtn.style.display = 'block';
+      if (resolveBtn) resolveBtn.style.display = 'block';
+      if (returnBtn) returnBtn.style.display = 'block';
+    }
+  } else {
+    actionsSec.style.display = 'none';
+  }
+
+  // Map Initialization
+  const lat = c.latitude;
+  const lng = c.longitude;
+  document.getElementById('dc-lat').textContent = lat || '--';
+  document.getElementById('dc-lng').textContent = lng || '--';
+  const mapContainer = document.getElementById('dc-map-container');
+  const mapError = document.getElementById('dc-map-error');
+  
+  if (lat && lng) {
+      mapContainer.style.display = 'block';
+      mapError.style.display = 'none';
+      
+      if (!window.dcMap) {
+          window.dcMap = L.map('dc-map-container');
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 19,
+              attribution: '© OpenStreetMap'
+          }).addTo(window.dcMap);
+          window.dcMarker = L.marker([lat, lng]).addTo(window.dcMap);
+      }
+      
+      window.dcMap.setView([lat, lng], 15);
+      window.dcMarker.setLatLng([lat, lng]);
+      
+      setTimeout(() => { window.dcMap.invalidateSize(); }, 300);
+  } else {
+      mapContainer.style.display = 'none';
+      mapError.style.display = 'block';
+  }
+
+  // Load media
+  document.getElementById('d-media').innerHTML = '<div class="spinner" style="margin:1rem auto;border-color:var(--dept);border-top-color:transparent;"></div>';
+  try {
+    const mr = await fetch(`/api/manager/complaint_media?complaint_id=${id}`);
+    const md = await mr.json();
+    renderMedia(md.media || []);
+  } catch (e) {
+    document.getElementById('d-media').innerHTML = '<span class="text-sm text-muted">Could not load media.</span>';
+  }
+
+  // Load history
+  await loadHistory(id);
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function renderMedia(paths) {
+  const el = document.getElementById('d-media');
+  if (!paths.length) { el.innerHTML = '<span class="text-sm text-muted">No media attached.</span>'; return; }
+  const videoExts = ['mp4', 'mov', 'avi', 'mkv'];
+  const pathsJson = JSON.stringify(paths).replace(/"/g, '&quot;');
+  el.innerHTML = paths.map((path, index) => {
+    const ext = (path.split('.').pop() || '').toLowerCase();
+    const url = `/${path.replace(/\\/g, '/')}`;
+    if (videoExts.includes(ext))
+      return `<div style="width:100%;max-width:300px;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="openMediaModal(${index}, ${pathsJson})"><video style="width:100%;aspect-ratio:4/3;object-fit:cover;"><source src="${url}">Your browser doesn't support video.</video></div>`;
+    return `<img src="${url}" style="width:120px;height:90px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer;transition:transform 0.2s;" onclick="openMediaModal(${index}, ${pathsJson})" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" alt="Complaint media" />`;
+  }).join('');
+}
+
+let currentMediaList = [];
+let currentMediaIndex = 0;
+
+function openMediaModal(index, paths) {
+  currentMediaList = paths;
+  currentMediaIndex = index;
+  updateMediaModal();
+  document.getElementById('media-modal').classList.add('open');
+}
+
+function updateMediaModal() {
+  if(!currentMediaList || currentMediaList.length === 0) return;
+  const path = currentMediaList[currentMediaIndex];
+  const ext = (path.split('.').pop() || '').toLowerCase();
+  const url = `/${path.replace(/\\/g, '/')}`;
+  const videoExts = ['mp4', 'mov', 'avi', 'mkv'];
+  const content = document.getElementById('media-modal-content');
+  if (videoExts.includes(ext)) {
+    content.innerHTML = `<video controls autoplay style="max-width:100%; max-height:85vh; border-radius:8px;"><source src="${url}"></video>`;
+  } else {
+    content.innerHTML = `<img src="${url}" style="max-width:100%; max-height:85vh; border-radius:8px; object-fit:contain;" />`;
+  }
+  document.getElementById('media-prev').style.display = currentMediaIndex > 0 ? 'inline-block' : 'none';
+  document.getElementById('media-next').style.display = currentMediaIndex < currentMediaList.length - 1 ? 'inline-block' : 'none';
+}
+
+function nextMedia() { if (currentMediaIndex < currentMediaList.length - 1) { currentMediaIndex++; updateMediaModal(); } }
+function prevMedia() { if (currentMediaIndex > 0) { currentMediaIndex--; updateMediaModal(); } }
+function closeMediaModal() {
+  document.getElementById('media-modal').classList.remove('open');
+  document.getElementById('media-modal-content').innerHTML = ''; // Stop video
+}
+
+async function loadHistory(complaintId) {
+  const timeline = document.getElementById('d-timeline');
+  timeline.innerHTML = '<div style="color:var(--text-muted);font-size:0.83rem;">Loading history…</div>';
+  try {
+    const res = await fetch(`/api/complaint_history?complaint_id=${complaintId}`);
+    const data = await res.json();
+    if (data.success) {
+      renderTimeline(data.history || []);
+    } else {
+      timeline.innerHTML = '<div style="color:var(--text-muted);font-size:0.83rem;">Could not load history.</div>';
+    }
+  } catch (e) {
+    timeline.innerHTML = '<div style="color:var(--text-muted);font-size:0.83rem;">Server error loading history.</div>';
+  }
+}
+
+function renderTimeline(history) {
+  const tl = document.getElementById('d-timeline');
+  if (!history.length) { tl.innerHTML = '<div style="color:var(--text-muted);font-size:0.83rem;">No history yet.</div>'; return; }
+  tl.innerHTML = history.map(h => `
+    <div class="timeline-item">
+      <div class="timeline-dot-col"><div class="timeline-dot"></div><div class="timeline-line"></div></div>
+      <div class="timeline-content">
+        <div class="timeline-action">${esc(h.action_type)}</div>
+        <div class="timeline-meta">By ${esc(h.updated_by_role)} · ${fmt(h.created_at)}</div>
+        ${h.note ? `<div class="timeline-note">${esc(h.note)}</div>` : ''}
+        ${h.expected_resolution_date ? `<div class="timeline-note">⏳ Expected: ${h.expected_resolution_date}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function closeDetail(e) {
+  if (!e || e.target === document.getElementById('detail-overlay')) {
+    document.getElementById('detail-overlay').classList.remove('open');
+    state.currentComplaint = null;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  ACTION MODAL
+// ═══════════════════════════════════════════════
+function openModal(action) {
+  state.pendingAction = action;
+  const modal = document.getElementById('action-modal');
+  const resolveSection = document.getElementById('modal-resolve-section');
+  const noteSection = document.getElementById('modal-note-section');
+  const dateSection = document.getElementById('modal-date-section');
+  const alertEl = document.getElementById('modal-alert');
+
+  // Block resolve if team never dispatched (status still Task Assigned, not Working)
+  if (action === 'Resolve') {
+    const c = state.currentComplaint;
+    if (c && c.status && c.status !== 'Working') {
+      // Not yet dispatched — show merge/confirm option
+      document.getElementById('modal-title').textContent = '✅ Mark as Resolved';
+      document.getElementById('modal-sub').textContent =
+        '⚠️ The team has not been dispatched for this complaint yet. Please dispatch first. If this complaint was resolved by an existing team already working on the same issue, check the box below to confirm.';
+      document.getElementById('modal-confirm-btn').style.cssText = 'background:#3d9450;color:#fff;border-color:#3d9450;flex:1;justify-content:center;';
+      document.getElementById('modal-confirm-btn').textContent = 'Confirm Resolved';
+      alertEl.classList.add('hidden');
+      noteSection.style.display = 'none';
+      dateSection.style.display = 'none';
+      resolveSection.style.display = 'block';
+      resolveSection.innerHTML = `
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:0.85rem 1rem;font-size:0.85rem;color:#92400e;line-height:1.6;margin-bottom:0.75rem;">
+          ⚠️ Team has not been dispatched yet for this complaint.
+          If you dispatched an existing team working on the same issue, confirm below.
+        </div>
+        <label style="display:flex;align-items:center;gap:0.6rem;font-size:0.88rem;cursor:pointer;">
+          <input type="checkbox" id="merge-confirm-check" style="width:16px;height:16px;accent-color:#3b8c8c;" />
+          I confirm this was resolved via an existing team (merged complaint)
+        </label>
+      `;
+      modal.classList.add('open');
+      return;
+    } else {
+      // Dispatched/Working — show standard confirmation
+      document.getElementById('modal-title').textContent = '✅ Mark as Resolved';
+      document.getElementById('modal-sub').textContent = 'Confirm that this complaint has been fully resolved.';
+      document.getElementById('modal-confirm-btn').style.cssText = 'background:#3d9450;color:#fff;border-color:#3d9450;flex:1;justify-content:center;';
+      document.getElementById('modal-confirm-btn').textContent = 'Yes, Mark Resolved';
+      alertEl.classList.add('hidden');
+      noteSection.style.display = 'none';
+      dateSection.style.display = 'none';
+      resolveSection.style.display = 'block';
+      resolveSection.innerHTML = `
+        ✅ This will mark the complaint as <strong>Resolved</strong> and automatically send an email notification to the person who filed it. No note is required.
+      `;
+      modal.classList.add('open');
+      return;
+    }
+  }
+
+  const titles = {
+    Dispatch: '🚗 Dispatch Team',
+    Delay: '⏳ Report Delay',
+    Return: '↩️ Return to Manager'
+  };
+  const subs = {
+    Dispatch: 'Provide details about the team being dispatched to resolve this complaint. The status will change to Working.',
+    Delay: 'Explain the reason for the delay and provide an expected resolution date.',
+    Return: 'Provide a mandatory reason why this complaint cannot be handled by your department.'
+  };
+  const labels = { Dispatch: 'Team details / Note', Delay: 'Reason for delay', Return: 'Reason for returning' };
+  const btnColors = { Dispatch: 'background:#3b8c8c;color:#fff;border-color:#3b8c8c;', Delay: 'background:#d97706;color:#fff;border-color:#d97706;', Return: 'background:#dc2626;color:#fff;border-color:#dc2626;' };
+
+  document.getElementById('modal-title').textContent = titles[action];
+  document.getElementById('modal-sub').textContent = subs[action];
+  document.getElementById('modal-confirm-btn').style.cssText = btnColors[action] + 'flex:1;justify-content:center;';
+  document.getElementById('modal-confirm-btn').textContent = 'Confirm';
+  alertEl.classList.add('hidden');
+  document.getElementById('modal-note').value = '';
+  document.getElementById('modal-date').value = '';
+
+  // Show/hide sections
+  noteSection.style.display = 'block';
+  dateSection.style.display = action === 'Delay' ? 'block' : 'none';
+  resolveSection.style.display = 'none';
+  document.getElementById('modal-note-label').textContent = labels[action] || 'Note';
+
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('action-modal').classList.remove('open');
+  state.pendingAction = null;
+}
+
+async function submitAction() {
+  const action = state.pendingAction;
+  const c = state.currentComplaint;
+  if (!action || !c) return;
+
+  const note = document.getElementById('modal-note').value.trim();
+  const expectedDate = document.getElementById('modal-date').value;
+  const alertEl = document.getElementById('modal-alert');
+
+  if (action !== 'Resolve' && !note) {
+    alertEl.className = 'alert alert-error'; alertEl.textContent = 'Please provide a note or reason.';
+    alertEl.classList.remove('hidden'); return;
+  }
+  if (action === 'Delay' && !expectedDate) {
+    alertEl.className = 'alert alert-error'; alertEl.textContent = 'Please provide an expected resolution date.';
+    alertEl.classList.remove('hidden'); return;
+  }
+  // Resolve without dispatch — require merge confirmation
+  if (action === 'Resolve' && c.status && c.status !== 'Working') {
+    const mergeCheck = document.getElementById('merge-confirm-check');
+    if (mergeCheck && !mergeCheck.checked) {
+      alertEl.className = 'alert alert-error';
+      alertEl.textContent = 'Please confirm this was resolved via an existing working team (check the box).';
+      alertEl.classList.remove('hidden'); return;
+    }
+  }
+
+  const btn = document.getElementById('modal-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Processing…';
+
+  try {
+    const res = await fetch('/api/department/action', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        dept_table_id: parseInt(state.deptTableId),
+        complaint_id: c.id,
+        action_type: action,
+        note: note,
+        expected_resolution_date: expectedDate || null
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeModal();
+      document.getElementById('detail-overlay').classList.remove('open');
+      state.currentComplaint = null;
+      await loadComplaints();
+    } else {
+      alertEl.className = 'alert alert-error';
+      alertEl.textContent = data.error || 'Action failed. Please try again.';
+      alertEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    alertEl.className = 'alert alert-error'; alertEl.textContent = 'Server error. Please try again.';
+    alertEl.classList.remove('hidden');
+  }
+  btn.disabled = false;
+  btn.textContent = action === 'Resolve' ? 'Yes, Mark Resolved' : 'Confirm';
+}
+
+// ═══════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════
+function fmt(dt) {
+  if (!dt) return '—';
+  try { return new Date(dt).toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'}); } catch { return dt; }
+}
+function esc(s) {
+  if (s == null) return '—';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function logout() {
+  const id = sessionStorage.getItem('cc_dept_table_id');
+  if (id) {
+    navigator.sendBeacon('/api/logout_status', JSON.stringify({ role: 'department', id: parseInt(id) }));
+  }
+  sessionStorage.removeItem('cc_dept_table_id');
+  sessionStorage.removeItem('cc_dept_id');
+  sessionStorage.removeItem('cc_dept_is_approved');
+  sessionStorage.removeItem('cc_role');
+  window.location.href = '/';
+}
+
+// Also mark offline when tab/window is closed
+window.addEventListener('beforeunload', () => {
+  const id = sessionStorage.getItem('cc_dept_table_id');
+  if (id) {
+    navigator.sendBeacon('/api/logout_status', JSON.stringify({ role: 'department', id: parseInt(id) }));
+  }
+});
+
+function startOtpTimer(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = true;
+    let timeLeft = 15;
+    btn.textContent = `Resend OTP (${timeLeft}s)`;
+    const timer = setInterval(() => {
+        timeLeft -= 1;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.textContent = 'Resend OTP';
+            btn.disabled = false;
+        } else {
+            btn.textContent = `Resend OTP (${timeLeft}s)`;
+        }
+    }, 1000);
+}
+
+let chatOpen = false;
+let chatPollTimer = null;
+
+function toggleChat() {
+    chatOpen = !chatOpen;
+    document.getElementById('chat-window').classList.toggle('open', chatOpen);
+    if(chatOpen) {
+        pollMessages();
+        chatPollTimer = setInterval(pollMessages, 3000);
+    } else {
+        clearInterval(chatPollTimer);
+    }
+}
+
+async function pollMessages() {
+    const id = sessionStorage.getItem('cc_dept_table_id');
+    if(!id) return;
+    try {
+        const res = await fetch(`/api/messages/fetch?role1=department&id1=${id}&role2=admin&id2=1`);
+        const data = await res.json();
+        if(data.success) {
+            renderMessages(data.messages);
+        }
+    } catch(e) {}
+}
+
+function renderMessages(msgs) {
+    const container = document.getElementById('chat-messages');
+    if(!msgs.length) {
+        container.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:0.8rem;margin-top:auto;margin-bottom:auto;">Start a conversation with Admin.</div>';
+        return;
+    }
+    const html = msgs.map(m => {
+        const isMe = m.sender_role === 'department';
+        return `<div class="chat-bubble ${isMe ? 'sent' : 'received'}">${m.content}</div>`;
+    }).join('');
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if(!msg) return;
+    const id = sessionStorage.getItem('cc_dept_table_id');
+    if(!id) return;
+    input.value = '';
+    
+    // Optimistic UI
+    const container = document.getElementById('chat-messages');
+    container.innerHTML += `<div class="chat-bubble sent" style="opacity:0.7">${msg}</div>`;
+    container.scrollTop = container.scrollHeight;
+    
+    await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            sender_role: 'department', sender_id: id,
+            receiver_role: 'admin', receiver_id: 1,
+            content: msg
+        })
+    });
+    pollMessages();
+}
+
+async function clearChat() {
+    const id = sessionStorage.getItem('cc_dept_table_id');
+    if(!id) return;
+    if(!confirm('Are you sure you want to clear this chat history?')) return;
+    
+    await fetch('/api/messages/clear', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ role: 'department', id: id })
+    });
+    pollMessages();
+}
+
+</script>
+
+  <!-- FOOTER MODAL -->
+  <div id="footer-modal" class="modal-overlay" style="z-index:9999; display:none;" onclick="if(event.target===this) closeFooterModal()">
+    <div class="modal-box" style="max-width:550px;">
+      <div class="modal-title" id="fm-title">Title</div>
+      <div class="footer-modal-content" id="fm-content" style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1.5rem; color: var(--text); line-height: 1.6; font-size: 0.9rem;">
+        Content goes here...
+      </div>
+      <div class="modal-actions" style="justify-content:flex-end;">
+        <button class="btn btn-secondary" style="width:auto" onclick="closeFooterModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openFooterModal(type) {
+      const modal = document.getElementById('footer-modal');
+      const title = document.getElementById('fm-title');
+      const content = document.getElementById('fm-content');
+      
+      if (type === 'help') {
+        title.textContent = 'Help Center';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">How to use the Dashboard</h3><p>Use the navigation menu to switch between views. You can view complaint details by clicking on any complaint card.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">FAQs</h3><p><strong>Q: How do I change my email?</strong><br>A: Click on the Email button in your profile panel and verify using the OTP sent to your new address.</p>';
+      } else if (type === 'contact') {
+        title.textContent = 'Contact Us';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Get in Touch</h3><p>If you are experiencing technical difficulties with the Urbano portal, please reach out to our IT support desk.</p><p><strong>Email:</strong> support@mysore.city<br><strong>Phone:</strong> +91 1800-URBANO-123<br><strong>Hours:</strong> Mon - Fri, 9:00 AM - 6:00 PM</p>';
+      } else if (type === 'terms') {
+        title.textContent = 'Terms & Conditions';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">1. Usage Policy</h3><p>This portal is intended solely for official municipal use. Unauthorized access is strictly prohibited and monitored.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">2. Data Accuracy</h3><p>You are responsible for ensuring that the status of complaints accurately reflects the real-world resolution state.</p>';
+      } else if (type === 'privacy') {
+        title.textContent = 'Privacy Policy & Copyright';
+        content.innerHTML = '<h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Data Handling</h3><p>All citizen data, including names, contact numbers, and addresses, are strictly confidential. Do not share this information outside of the official communication channels.</p><h3 style="margin: 1rem 0 0.5rem; font-weight:700;">Copyright</h3><p>&copy; 2026 Mysore City Corporation. All rights reserved. System components and styling are proprietary.</p>';
+      }
+      modal.classList.add('open');
+      modal.style.display = 'flex';
+      modal.style.visibility = 'visible';
+      modal.style.opacity = '1';
+    }
+
+    function closeFooterModal() {
+      const modal = document.getElementById('footer-modal');
+      if(modal) {
+        modal.classList.remove('open');
+        modal.style.display = 'none';
+        modal.style.visibility = 'hidden';
+        modal.style.opacity = '0';
+      }
+    }
+  
+function startOtpTimer(btnId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = true;
+    let timeLeft = 15;
+    btn.textContent = `Resend OTP (${timeLeft}s)`;
+    const timer = setInterval(() => {
+        timeLeft -= 1;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.textContent = 'Resend OTP';
+            btn.disabled = false;
+        } else {
+            btn.textContent = `Resend OTP (${timeLeft}s)`;
+        }
+    }, 1000);
+}
+
+</script>
+
+
+<div class="chat-window" id="chat-window">
+    <div class="chat-header">
+        <div>
+            <div style="font-size:1rem;">Admin Support</div>
+            <div style="font-size:0.75rem;font-weight:400;opacity:0.8;">Status: Online</div>
+        </div>
+        <div>
+            <button onclick="clearChat()" style="background:none;border:none;color:white;cursor:pointer;margin-right:15px;font-size:0.85rem;text-decoration:underline;">Clear</button>
+            <span style="cursor:pointer;font-size:1.1rem;" onclick="toggleChat()">✕</span>
+        </div>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+        <div style="text-align:center;color:#94a3b8;font-size:0.8rem;margin-top:auto;margin-bottom:auto;">Loading messages...</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+        <button onclick="sendChatMessage()" style="font-size:1.2rem; font-weight:bold; display:flex; align-items:center; justify-content:center;">➔</button>
+    </div>
+</div>
+
+  <!-- Media Modal -->
+  <div id="media-modal" class="modal-overlay" style="z-index:9999;" onclick="if(event.target===this) closeMediaModal()">
+    <div style="position:relative; width:90%; height:90%; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+      <button onclick="closeMediaModal()" style="position:absolute; top:-10px; right:-10px; background:white; color:black; border:none; border-radius:50%; width:40px; height:40px; font-size:1.5rem; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:10001;">&times;</button>
+      <div id="media-modal-content" style="max-width:100%; max-height:100%; display:flex; align-items:center; justify-content:center;"></div>
+      <div style="position:absolute; bottom:20px; display:flex; gap:10px;">
+        <button id="media-prev" onclick="prevMedia()" class="btn btn-primary">&larr; Prev</button>
+        <button id="media-next" onclick="nextMedia()" class="btn btn-primary">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

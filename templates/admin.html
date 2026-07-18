@@ -1,0 +1,2933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urbano  Admin Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --sidebar-w: 248px;
+      --sidebar-bg: #0f172a;
+      --sidebar-accent: #6366f1;
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --primary: #6366f1;
+      --primary-light: #e0e7ff;
+      --teal: #0d9488;
+      --teal-light: #ccfbf1;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --red: #dc2626;
+      --red-light: #fee2e2;
+      --blue: #2563eb;
+      --blue-light: #dbeafe;
+      --purple: #7c3aed;
+      --purple-light: #ede9fe;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @keyframes pulseLogoBg {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+      50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(99,102,241,0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+    }
+    @keyframes subtleGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    body {
+      margin: 0; font-family: 'Inter', sans-serif;
+      background: linear-gradient(-45deg, #f8fafc, #eff6ff, #f8fafc);
+      background-size: 400% 400%;
+      animation: subtleGradient 15s ease infinite;
+      color: var(--text);
+      display: flex; height: 100vh; overflow: hidden;
+      animation: appEntry 0.5s ease-out forwards;
+    }
+
+    @keyframes appEntry {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /*  SIDEBAR  */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo-icon {
+      animation: pulseLogoBg 2s infinite ease-in-out;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-img {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+
+    .logo-wordmark { font-size: 1.1rem; font-weight: 900; color: #fff; letter-spacing: -0.03em; }
+
+    .admin-badge {
+      display: inline-block;
+      background: rgba(99,102,241,0.2);
+      border: 1px solid rgba(99,102,241,0.4);
+      color: #a5b4fc;
+      font-size: 0.58rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.18rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .sidebar-nav { padding: 0.5rem 0; flex: 1; }
+
+    .nav-section-label {
+      font-size: 0.59rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.22);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 0.65rem 1.25rem 0.2rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.58rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 0.84rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.5);
+      border-left: 3px solid transparent;
+    }
+
+    .nav-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+
+    .nav-item.active {
+      background: rgba(99,102,241,0.14);
+      color: #fff;
+      font-weight: 700;
+      border-left-color: var(--sidebar-accent);
+    }
+
+    .nav-icon { width: 18px; text-align: center; font-size: 0.92rem; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.08rem 0.42rem;
+      font-size: 0.62rem;
+      font-weight: 700;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .server-pulse {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 0.25rem;
+    }
+
+    .pulse-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulseBeat 2s infinite;
+    }
+
+    @keyframes pulseBeat {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+    }
+
+    /*  MAIN  */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .topbar-title { font-size: 0.95rem; font-weight: 800; color: var(--text); }
+
+    .topbar-right { display: flex; align-items: center; gap: 0.65rem; }
+
+    .topbar-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.38rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.28rem 0.7rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .refresh-btn {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1.5px solid #c7d2fe;
+      border-radius: 8px;
+      padding: 0.35rem 0.8rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.77rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .refresh-btn:hover { background: #c7d2fe; }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    /*  VIEWS  */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /*  PAGE HEADER  */
+    .page-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 1.4rem;
+    }
+
+    .page-head h2 {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .page-head p { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    /*  STAT CARDS  */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 1.1rem 1.2rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--card-color, var(--primary));
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.09);
+      border-color: var(--card-color, var(--primary));
+    }
+
+    .stat-card-icon { font-size: 1.25rem; margin-bottom: 0.55rem; }
+    .stat-card-value { font-size: 1.75rem; font-weight: 900; color: var(--text); line-height: 1; margin-bottom: 0.2rem; }
+    .stat-card-label { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /*  TABLE CARD  */
+    .table-wrap {
+      background: var(--surface);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 0.9rem 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+    }
+
+    .table-title { font-size: 0.88rem; font-weight: 800; color: var(--text); }
+    .table-count { font-size: 0.73rem; font-weight: 500; color: var(--text-muted); margin-left: 0.35rem; }
+    .table-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+
+    .search-box {
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.79rem;
+      outline: none;
+      color: var(--text);
+      transition: border-color 0.15s;
+      width: 200px;
+    }
+
+    .search-box:focus { border-color: var(--primary); }
+
+    select.filter-sel {
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.65rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.79rem;
+      outline: none;
+      color: var(--text);
+      background: var(--surface);
+      cursor: pointer;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      padding: 0.62rem 1rem;
+      text-align: left;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.68rem 1rem;
+      font-size: 0.81rem;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+
+    .empty-row td {
+      text-align: center;
+      color: var(--text-light);
+      padding: 2rem;
+      font-size: 0.86rem;
+    }
+
+    /*  BADGES  */
+    .badge {
+      display: inline-block;
+      padding: 0.17rem 0.52rem;
+      border-radius: 999px;
+      font-size: 0.67rem;
+      font-weight: 700;
+    }
+
+    .badge-approved { background: var(--green-light); color: #15803d; }
+    .badge-pending { background: var(--amber-light); color: #92400e; }
+    .badge-registered { background: var(--blue-light); color: var(--blue); }
+    .badge-working { background: #e0fdf4; color: var(--teal); }
+    .badge-resolved { background: var(--green-light); color: var(--green); }
+    .badge-return { background: var(--red-light); color: var(--red); }
+    .badge-assigned { background: var(--purple-light); color: #6d28d9; }
+
+    /*  BUTTONS  */
+    .btn {
+      padding: 0.52rem 1rem;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { opacity: 0.88; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-teal { background: var(--teal); color: #fff; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-secondary { background: #f1f5f9; color: #475569; border: 1.5px solid var(--border); }
+    .btn-sm { padding: 0.27rem 0.62rem; font-size: 0.73rem; border-radius: 6px; }
+
+    .action-btn-sm {
+      padding: 0.27rem 0.62rem;
+      border-radius: 6px;
+      border: 1.5px solid;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .btn-edit { background: var(--blue-light); color: var(--blue); border-color: #bfdbfe; }
+    .btn-del { background: var(--red-light); color: var(--red); border-color: #fca5a5; }
+
+    /*  MODAL  */
+    .modal-overlay {
+      visibility: hidden;
+      opacity: 0;
+      position: fixed;
+      inset: 0;
+      z-index: 800;
+      background: rgba(15,23,42,0.58);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      transition: opacity 0.22s, visibility 0.22s;
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-overlay.open { visibility: visible; opacity: 1; }
+
+    .modal-box {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 1.65rem;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.22);
+      transform: translateY(-16px);
+      transition: transform 0.22s;
+    }
+
+    .modal-overlay.open .modal-box { transform: translateY(0); }
+
+    .modal-title { font-size: 1.02rem; font-weight: 800; color: var(--text); margin-bottom: 1.15rem; }
+
+    .form-group { margin-bottom: 0.82rem; }
+
+    .form-group label {
+      display: block;
+      font-size: 0.73rem;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 0.28rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.52rem 0.78rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.84rem;
+      outline: none;
+      color: var(--text);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { border-color: var(--primary); }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.55rem;
+      margin-top: 1.1rem;
+    }
+
+    .modal-alert {
+      background: var(--red-light);
+      color: var(--red);
+      border-radius: 8px;
+      padding: 0.58rem 0.82rem;
+      font-size: 0.79rem;
+      margin-bottom: 0.7rem;
+      display: none;
+    }
+
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      gap: 0.58rem;
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /*  DRAWER  */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 700;
+      background: rgba(15,23,42,0.42);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      backdrop-filter: blur(1px);
+    }
+
+    .drawer-overlay.open { opacity: 1; visibility: visible; }
+
+    .drawer {
+      position: fixed;
+      top: 0; right: 0;
+      width: min(820px, 92vw);
+      height: 100vh;
+      background: var(--surface);
+      box-shadow: -8px 0 40px rgba(0,0,0,0.16);
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 710;
+    }
+
+    .drawer-overlay.open .drawer { transform: translateX(0); }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+      flex-shrink: 0;
+    }
+
+    .drawer-title { font-size: 0.97rem; font-weight: 800; color: var(--text); }
+
+    .drawer-header-actions { display: flex; align-items: center; gap: 0.5rem; }
+
+    .icon-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover { background: var(--red-light); color: var(--red); border-color: #fca5a5; }
+
+    .drawer-body { flex: 1; overflow-y: auto; padding: 1.4rem; }
+
+    /* Profile card in drawer */
+    .profile-card {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.2rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .profile-card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .profile-avatar {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), #7c3aed);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      color: #fff;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .profile-name { font-size: 1.02rem; font-weight: 800; color: var(--text); }
+    .profile-id { font-size: 0.7rem; color: var(--text-muted); font-family: monospace; margin-top: 0.1rem; }
+
+    .profile-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.7rem;
+    }
+
+    .profile-detail-label { font-size: 0.62rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.04em; }
+    .profile-detail-value { font-size: 0.82rem; font-weight: 600; color: var(--text); margin-top: 0.12rem; }
+
+    /* Complaint tabs */
+    .section-title {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.7rem;
+    }
+
+    .comp-tabs {
+      display: flex;
+      gap: 0.22rem;
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 0.22rem;
+      margin-bottom: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .comp-tab {
+      padding: 0.38rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .comp-tab:hover { background: rgba(255,255,255,0.7); color: var(--text); }
+
+    .comp-tab.active {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .comp-list { display: flex; flex-direction: column; gap: 0.55rem; }
+
+    .comp-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.82rem 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .comp-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(99,102,241,0.12);
+      transform: translateX(2px);
+    }
+
+    .comp-card-title { font-size: 0.83rem; font-weight: 700; color: var(--text); margin-bottom: 0.18rem; }
+    .comp-card-meta { font-size: 0.7rem; color: var(--text-muted); }
+
+    /*  COMPLAINT POPUP (from drawer)  */
+    .comp-popup-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      background: rgba(15,23,42,0.58);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+      backdrop-filter: blur(2px);
+    }
+
+    .comp-popup-overlay.open { opacity: 1; visibility: visible; }
+
+    .comp-popup {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: min(600px, 90vw);
+      max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.28);
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+
+    .comp-popup-overlay.open .comp-popup { transform: scale(1); }
+
+    .comp-popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.15rem;
+    }
+
+    .comp-popup-title { font-size: 0.98rem; font-weight: 800; color: var(--text); }
+
+    /*  COMMS HUB  */
+    .comms-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 1.2rem;
+      height: calc(100vh - 190px);
+    }
+
+    .comms-left { display: flex; flex-direction: column; gap: 1.2rem; height: 100%; }
+
+    .online-cards-wrap {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 0.7rem;
+      overflow-y: auto;
+      flex: 1;
+      padding-right: 2px;
+    }
+
+    .online-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .online-card:hover { border-color: var(--primary); box-shadow: 0 2px 10px rgba(99,102,241,0.1); }
+
+    .status-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.online { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.18); animation: pulseBeat 2s infinite; }
+    .status-dot.offline { background: #94a3b8; }
+
+    .online-card-name { font-size: 0.8rem; font-weight: 700; color: var(--text); }
+    .online-card-role { font-size: 0.66rem; color: var(--text-muted); text-transform: capitalize; }
+    .online-card-seen { font-size: 0.63rem; color: var(--text-light); margin-top: 0.12rem; }
+
+    /* Chat panel */
+    .chat-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    .chat-panel-header {
+      padding: 0.8rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      background: #fafbfc;
+    }
+
+    .chat-thread-list { flex: 1; overflow-y: auto; }
+
+    .chat-thread {
+      padding: 0.72rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .chat-thread:hover { background: #f8fafc; }
+    .chat-thread.active { background: var(--primary-light); border-left: 3px solid var(--primary); }
+    .chat-thread-name { font-size: 0.8rem; font-weight: 600; color: var(--text); }
+    .chat-thread-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.18rem; }
+
+    .chat-main-area { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .chat-main-header { padding: 0.8rem 1rem; font-size: 0.82rem; font-weight: 700; border-bottom: 1px solid var(--border); background: #fafbfc; }
+
+    .chat-messages {
+      flex: 1;
+      padding: 0.9rem;
+      overflow-y: auto;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .chat-bubble {
+      max-width: 72%;
+      padding: 0.58rem 0.85rem;
+      border-radius: 14px;
+      font-size: 0.83rem;
+      line-height: 1.4;
+    }
+
+    .chat-bubble.sent { background: var(--primary); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .chat-bubble.received { background: #fff; color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+
+    .chat-input-area { padding: 0.7rem; border-top: 1px solid var(--border); display: flex; gap: 0.45rem; background: var(--surface); }
+
+    .chat-input-area input {
+      flex: 1;
+      padding: 0.5rem 0.8rem;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+    }
+
+    .chat-input-area input:focus { border-color: var(--primary); }
+
+    .chat-send-btn {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .chat-empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-light);
+      font-size: 0.8rem;
+      gap: 0.45rem;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    /*  TERMINAL  */
+    .terminal-wrap {
+      background: #0f172a;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .terminal-header {
+      background: #1e293b;
+      padding: 0.55rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid #334155;
+      flex-shrink: 0;
+    }
+
+    .terminal-dots { display: flex; gap: 5px; }
+    .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .terminal-title { color: #94a3b8; font-family: monospace; font-size: 0.8rem; margin-left: 0.35rem; }
+
+    .terminal-body {
+      padding: 1rem;
+      height: 180px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    /*  FOOTER  */
+    .admin-footer {
+      background: #0f172a;
+      border-top: 1px solid #1e293b;
+      padding: 0.55rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .footer-brand { font-size: 0.68rem; font-weight: 800; color: rgba(255,255,255,0.3); letter-spacing: 0.08em; }
+
+    .footer-server-info { display: flex; align-items: center; gap: 0.9rem; font-size: 0.68rem; }
+
+    .footer-server-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.22);
+      border-radius: 999px;
+      padding: 0.18rem 0.55rem;
+      color: #4ade80;
+      font-weight: 600;
+      font-size: 0.68rem;
+    }
+
+    .footer-server-info span { color: rgba(255,255,255,0.38); }
+    .footer-server-info strong { color: rgba(255,255,255,0.6); font-weight: 700; }
+
+    .footer-time { font-size: 0.65rem; color: rgba(255,255,255,0.28); }
+
+    /*  TOAST  */
+    #toast-container {
+      position: fixed;
+      top: 1rem; right: 1rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .toast {
+      background: var(--text);
+      color: #fff;
+      border-radius: 10px;
+      padding: 0.65rem 1rem;
+      font-size: 0.81rem;
+      font-weight: 600;
+      min-width: 200px;
+      animation: slideIn 0.22s ease;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+    }
+
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--red); }
+
+    @keyframes slideIn {
+      from { transform: translateX(110%); }
+      to { transform: translateX(0); }
+    }
+
+    /* pending cols */
+    .pending-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 700px) { .pending-cols { grid-template-columns: 1fr; } }
+
+    /* online indicator pill inline */
+    .online-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .online-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .online-pill .dot.on { background: #22c55e; }
+    .online-pill .dot.off { background: #94a3b8; }
+    
+    .view-dropdown:hover .view-dropdown-content { display: block !important; }
+    .view-dropdown-content div:hover { background: var(--bg); }
+
+    /* Grid View Styles */
+    body.view-grid table { display: block; border: none; background: transparent; }
+    body.view-grid thead { display: none; }
+    body.view-grid tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    body.view-grid tr { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    body.view-grid td { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; border: none; padding: 0.5rem 0; text-align: left; border-bottom: 1px solid var(--border); }
+    body.view-grid td:last-child { border-bottom: none; }
+    body.view-grid td::before { content: attr(data-label); font-weight: 700; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.25rem; margin-right: 0; }
+    body.view-grid tr td:first-child { font-weight: 800; font-size: 1.1rem; color: var(--primary); justify-content: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 0.25rem; }
+    body.view-grid tr td:first-child::before { display: none; }
+
+    .sidebar-logo {
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .sidebar-logo::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, rgba(99,102,241,0.15) 0%, transparent 100%);
+      background-size: 200% 200%;
+      z-index: -1;
+      animation: zoomBg 8s ease-in-out infinite alternate;
+    }
+    @keyframes zoomBg {
+      0% { transform: scale(1); background-position: 0% 0%; }
+      100% { transform: scale(1.5); background-position: 100% 100%; }
+    }
+  
+        /* Mobile Compatibility (Responsive Design) */
+    @media (max-width: 1024px) {
+      .sidebar { width: 70px; }
+      .logo-wordmark, .admin-badge, .nav-section-label, .nav-badge, .sidebar-footer, .server-pulse { display: none; }
+      .nav-item { justify-content: center; padding: 0.8rem 0; }
+      .nav-item span:not(.nav-icon) { display: none; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; flex-direction: row; align-items: center; justify-content: flex-start; padding: 0.5rem; overflow-x: auto; overflow-y: hidden; z-index: 50; }
+      .sidebar-nav { display: flex; flex-direction: row; padding: 0; width: max-content; }
+      .nav-item { padding: 0.5rem 1rem; border-radius: 999px; border: none; margin: 0 0.2rem; }
+      .logo-row { display: none; }
+      
+      .main { width: 100%; overflow-y: auto; }
+      .topbar { padding: 0.75rem 1rem; }
+      
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .table-wrap, .custom-table-container { overflow-x: auto; }
+      table { min-width: 600px; }
+      
+      .comms-grid, #comms-split { grid-template-columns: 1fr; display: flex; flex-direction: column; height: auto; }
+      .chat-panel, .chat-window { height: 500px; margin-top: 1rem; }
+      .chat-sidebar { max-height: 200px; border-right: none; border-bottom: 1px solid var(--border); }
+      .comp-tabs { overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
+    }
+    
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .page-head { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+    }
+</style>
+</head>
+<body>
+
+  <!--  SIDEBAR  -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon" style="background:var(--primary);color:#fff;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;">U</div>
+      <div class="logo-text" style="color:#fff;font-weight:700;font-size:1.1rem;">Urbano <span style="font-weight:400;opacity:0.8;">Admin</span></div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav-item active" onclick="showView('dashboard')" id="nav-dashboard">
+        <span class="nav-icon"><i class="fa fa-chart-bar"></i></span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showView('comms')" id="nav-comms">
+        <span class="nav-icon"><i class="fa fa-comments"></i></span> Comms Hub
+      </div>
+      <div class="nav-item" onclick="showView('terminal')" id="nav-terminal">
+        <span class="nav-icon"><i class="fa fa-terminal"></i></span> Live Traffic
+      </div>
+
+      <div class="nav-section-label" style="margin-top:0.5rem;">People</div>
+      <div class="nav-item" onclick="showView('managers')" id="nav-managers">
+        <span class="nav-icon"><i class="fa fa-user-tie"></i></span> Managers
+        <span class="nav-badge" id="badge-pending-mgr" style="display:none;">0</span>
+      </div>
+      <div class="nav-item" onclick="showView('departments')" id="nav-departments">
+        <span class="nav-icon"><i class="fa fa-building"></i></span> Departments
+        <span class="nav-badge" id="badge-pending-dept" style="display:none;">0</span>
+      </div>
+      <div class="nav-item" onclick="showView('users')" id="nav-users">
+        <span class="nav-icon"><i class="fa fa-users"></i></span> Users
+      </div>
+
+      <div class="nav-section-label" style="margin-top:0.5rem;">Complaints</div>
+      <div class="nav-item" onclick="showView('complaints')" id="nav-complaints">
+        <span class="nav-icon"><i class="fa fa-list"></i></span> All Complaints
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="server-pulse">
+        <div class="pulse-dot"></div>
+        <span style="font-size:0.68rem;color:rgba(255,255,255,0.35);">Server Online</span>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+
+  <!--  MAIN  -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="view-dropdown" id="view-toggle-container" style="display:none;position:relative;margin-right:0.5rem;">
+          <button class="btn btn-secondary btn-sm" style="font-weight:600;"><span style="margin-right:0.3rem;"></span> View</button>
+          <div class="view-dropdown-content" style="position:absolute;top:100%;right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 15px rgba(0,0,0,0.1);display:none;min-width:120px;z-index:100;overflow:hidden;text-align:left;">
+            <div onclick="document.body.classList.remove('view-grid')" style="padding:0.5rem 1rem;cursor:pointer;border-bottom:1px solid var(--border);font-size:0.8rem;white-space:nowrap;color:var(--text);"> List View</div>
+            <div onclick="document.body.classList.add('view-grid')" style="padding:0.5rem 1rem;cursor:pointer;font-size:0.8rem;white-space:nowrap;color:var(--text);"> Grid View</div>
+          </div>
+        </div>
+        <div class="topbar-pill">
+          <div class="pulse-dot"></div> Admin System
+        </div>
+        <div class="topbar-pill">
+          <span></span> <span id="quick-reqs"></span> reqs
+        </div>
+        <div class="topbar-pill">
+          <span></span> <span id="topbar-time"></span>
+        </div>
+        <button class="refresh-btn" onclick="refreshAll()"> Refresh</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!--  DASHBOARD  -->
+      <div class="view active" id="view-dashboard">
+        <div class="page-head">
+          <div>
+            <h2>Dashboard</h2>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card" style="--card-color:#6366f1" onclick="showView('complaints')">
+            <div class="stat-card-icon"></div>
+            <div class="stat-card-value" id="s-comps"></div>
+            <div class="stat-card-label">Total Complaints</div>
+          </div>
+          <div class="stat-card" style="--card-color:#f59e0b" onclick="showView('complaints', 'Registered')">
+            <div class="stat-card-icon"></div>
+            <div class="stat-card-value" id="s-unassigned"></div>
+            <div class="stat-card-label">Open / Unassigned</div>
+          </div>
+          <div class="stat-card" style="--card-color:#3b82f6" onclick="showView('complaints', 'Working')">
+            <div class="stat-card-icon"></div>
+            <div class="stat-card-value" id="s-working"></div>
+            <div class="stat-card-label">Active / Working</div>
+          </div>
+          <div class="stat-card" style="--card-color:#16a34a" onclick="showView('complaints', 'Resolved')">
+            <div class="stat-card-icon"></div>
+            <div class="stat-card-value" id="s-resolved"></div>
+            <div class="stat-card-label">Resolved</div>
+          </div>
+          <div class="stat-card" style="--card-color:#6366f1" onclick="showView('users')">
+            <div class="stat-card-icon"></div>
+            <div class="stat-card-value" id="s-users"></div>
+            <div class="stat-card-label">Registered Users</div>
+          </div>
+          <div class="stat-card" style="--card-color:#8b5cf6" onclick="showView('managers')">
+            <div class="stat-card-icon"></div>
+            <div class="stat-card-value" id="s-mgrs"></div>
+            <div class="stat-card-label">Active Managers</div>
+          </div>
+          <div class="stat-card" style="--card-color:#ec4899" onclick="showView('departments')">
+            <div class="stat-card-icon"></div>
+            <div class="stat-card-value" id="s-depts"></div>
+            <div class="stat-card-label">Active Departments</div>
+          </div>
+          <div class="stat-card" style="--card-color:#ef4444" onclick="showView('complaints', 'Return Pending')">
+            <div class="stat-card-icon"></div>
+            <div class="stat-card-value" id="s-return"></div>
+            <div class="stat-card-label">Return Pending</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="table-title"> Pending Approvals</span>
+          </div>
+          <div class="pending-cols" style="padding:1rem;">
+            <div>
+              <div style="font-weight:700;color:var(--teal);margin-bottom:0.5rem;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.05em;"> Managers</div>
+              <table>
+                <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
+                <tbody id="pending-mgr-table"><tr class="empty-row"><td colspan="3">Loading</td></tr></tbody>
+              </table>
+            </div>
+            <div>
+              <div style="font-weight:700;color:var(--teal);margin-bottom:0.5rem;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.05em;"> Departments</div>
+              <table>
+                <thead><tr><th>Name</th><th>Email</th><th>Action</th></tr></thead>
+                <tbody id="pending-dept-table"><tr class="empty-row"><td colspan="3">Loading</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--  COMMS HUB  -->
+      <div class="view" id="view-comms">
+        <div class="page-head">
+          <div>
+            <h2> Comms Hub</h2>
+          </div>
+          <button class="refresh-btn" onclick="loadCommsHub()"> Refresh Status</button>
+        </div>
+
+        <div class="comms-grid">
+          <div class="comms-left">
+            <!-- Online Status Board -->
+            <div class="table-wrap" style="flex-shrink:0;">
+              <div class="table-header">
+                <span class="table-title"> Online Status</span>
+                <span class="table-count" id="online-count-label"></span>
+              </div>
+              <div style="padding:1rem;">
+                <div id="online-status-grid" class="online-cards-wrap">
+                  <div style="color:var(--text-light);font-size:0.82rem;grid-column:1/-1;text-align:center;padding:1rem;">Loading status...</div>
+                </div>
+              </div>
+            </div>
+
+            
+          </div>
+
+          <!-- Chat Panel -->
+          <div class="chat-panel">
+            <div style="display:none;" id="chat-thread-list" class="chat-thread-list"></div>
+            <div id="chat-empty-state" class="chat-empty-state" style="flex-direction:column;align-items:center;justify-content:center;gap:1rem;">
+              <div class="sidebar-logo" style="width:70px;height:70px;font-size:2rem;margin:0;"><i class="fa fa-city"></i></div>
+              <div style="color:var(--text-light);font-size:0.9rem;font-weight:600;">Select a conversation</div>
+            </div>
+            <div id="chat-main-area" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+              <div class="chat-main-header" id="chat-main-header" style="display:flex;align-items:center;">
+                
+                <div style="display:flex;flex-direction:column;">
+                  <span id="chat-main-title" style="font-size:0.9rem;font-weight:700;">Select a conversation</span>
+                  <span id="chat-main-status" style="font-size:0.65rem;color:var(--text-light);text-transform:uppercase;"></span>
+                </div>
+              </div>
+              <div class="chat-messages" id="chat-messages"></div>
+              <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Type a message"
+                       onkeydown="if(event.key==='Enter')sendAdminMessage()" />
+                <button class="chat-send-btn" onclick="sendAdminMessage()"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+      <!-- TERMINAL TAB -->
+      <div class="view" id="view-terminal">
+        <div class="page-head">
+          <div>
+            <h2>Server Terminal</h2>
+          </div>
+        </div>
+        <div style="padding:1rem; height:calc(100vh - 120px); display:flex; flex-direction:column; gap:1.5rem;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+            <div class="stat-card" style="background:var(--surface); padding:1rem; border-radius:12px; border:1px solid var(--border);">
+              <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Server Identity</div>
+              <div style="font-size:0.9rem; font-weight:600; color:var(--primary); margin-top:0.5rem;"><i class="fa fa-server"></i> <span id="stat-server">...</span></div>
+              <div style="font-size:0.8rem; color:var(--text-light); margin-top:0.2rem;"><i class="fa fa-network-wired"></i> <span id="stat-ip">...</span> : <span id="stat-port">...</span></div>
+              <div style="font-size:0.75rem; color:var(--text-light); margin-top:0.2rem; font-family:monospace;">MAC: <span id="stat-mac">...</span></div>
+            </div>
+            <div class="stat-card" style="background:var(--surface); padding:1rem; border-radius:12px; border:1px solid var(--border);">
+              <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Server Status</div>
+              <div id="stat-status" style="font-size:1.3rem; font-weight:800; color:var(--green); margin-top:0.5rem;">Online</div>
+              <div style="font-size:0.85rem; color:var(--text-light); margin-top:0.4rem;">Uptime: <strong id="stat-uptime" style="color:var(--text)">0h 0m 0s</strong></div>
+            </div>
+            <div class="stat-card" style="background:var(--surface); padding:1rem; border-radius:12px; border:1px solid var(--border);">
+              <div style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Active Sessions</div>
+              <div id="stat-sessions" style="font-size:2rem; font-weight:800; color:var(--amber); margin-top:0.3rem;">0</div>
+            </div>
+            
+          </div>
+          <!-- Terminal -->
+            <div class="terminal-wrap" style="flex:1; display:flex; flex-direction:column; height:100%;">
+              <div class="terminal-header">
+                <div class="terminal-dots">
+                  <div class="terminal-dot" style="background:#ef4444;"></div>
+                  <div class="terminal-dot" style="background:#eab308;"></div>
+                  <div class="terminal-dot" style="background:#22c55e;"></div>
+                </div>
+                <span class="terminal-title">Live Server Traffic [Terminal]</span>
+              </div>
+              <div class="terminal-body" id="traffic-terminal" style="flex:1;">
+                <div style="color:#64748b;">[System] Waiting for incoming traffic data...</div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <!--  MANAGERS  -->
+      <div class="view" id="view-managers">
+        <div class="page-head">
+          <div>
+            <h2> Managers</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="table-title">All Managers <span class="table-count" id="mgr-count"></span></span>
+            <div class="table-actions">
+              <input class="search-box" id="mgr-search" placeholder="Search name or email" oninput="filterManagers()" />
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>Email</th><th>Manager ID</th><th>Mobile</th>
+                <th>City</th><th>Status</th><th>Online</th><th>Registered</th>
+              </tr>
+            </thead>
+            <tbody id="mgr-table"><tr class="empty-row"><td colspan="8">Loading</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!--  DEPARTMENTS  -->
+      <div class="view" id="view-departments">
+        <div class="page-head">
+          <div>
+            <h2> Departments</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="table-title">All Departments <span class="table-count" id="dept-count"></span></span>
+            <div class="table-actions">
+              <input class="search-box" id="dept-search" placeholder="Search name or email" oninput="filterDepts()" />
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Department</th><th>Email</th><th>Dept ID</th><th>Head</th>
+                <th>City</th><th>Complaints</th><th>Status</th><th>Online</th>
+              </tr>
+            </thead>
+            <tbody id="dept-table"><tr class="empty-row"><td colspan="8">Loading</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!--  USERS  -->
+      <div class="view" id="view-users">
+        <div class="page-head">
+          <div>
+            <h2> Users</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="table-title">All Users <span class="table-count" id="user-count"></span></span>
+            <div class="table-actions">
+              <input class="search-box" id="user-search" placeholder="Search name or email" oninput="searchUsers()" />
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Mobile</th><th>Address</th><th>Complaints</th><th>Registered</th><th>Action</th></tr>
+            </thead>
+            <tbody id="user-table"><tr class="empty-row"><td colspan="7">Loading</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!--  ALL COMPLAINTS  -->
+      <div class="view" id="view-complaints">
+        <div class="page-head">
+          <div>
+            <h2> All Complaints</h2>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="table-title">Complaints <span class="table-count" id="comp-count"></span></span>
+            <div class="table-actions">
+              <input class="search-box" id="comp-search" placeholder="Search title or details" oninput="filterComplaints()" />
+              <select class="filter-sel" id="comp-status" onchange="filterComplaints()">
+                <option value="">All Statuses</option>
+                <option value="Registered">Registered</option>
+                <option value="Working">Working</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Return Pending">Return Pending</option>
+              </select>
+              <select class="filter-sel" id="comp-city" onchange="filterComplaints()">
+                <option value="">All Cities</option>
+              </select>
+              <select class="filter-sel" id="comp-dept" onchange="filterComplaints()">
+                <option value="">All Departments</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-container">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Title</th><th>City</th><th>Status</th><th>Department</th><th>Filed By</th><th>Date</th></tr>
+            </thead>
+            <tbody id="comp-table"><tr class="empty-row"><td colspan="7">Loading</td></tr></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+
+    <!-- Footer -->
+    <div class="admin-footer">
+      <div class="footer-brand">URBANO ADMIN</div>
+      <div class="footer-server-info">
+        <div class="footer-server-pill">
+          <div class="pulse-dot" style="width:5px;height:5px;"></div>
+          Server Online
+        </div>
+      </div>
+    </div>
+  </div><!-- /main -->
+
+  <!--  ENTITY DRAWER  -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="if(event.target===this)closeDrawer()">
+    <div class="drawer" id="entity-drawer">
+      <div class="drawer-header">
+        <div class="drawer-title" id="drawer-title">Details</div>
+        <div class="drawer-header-actions">
+          <button class="btn btn-sm btn-secondary" id="drawer-edit-btn" onclick="openEditModal()"> Edit / Approve</button>
+          <button class="btn btn-sm btn-danger" id="drawer-delete-btn" onclick="drawerDelete()"> Delete</button>
+          <button class="icon-btn" onclick="closeDrawer()"></button>
+        </div>
+      </div>
+      <div class="drawer-body" id="drawer-body"></div>
+    </div>
+  </div>
+
+  <!--  COMPLAINT POPUP (from drawer)  -->
+  <div class="comp-popup-overlay" id="comp-popup-overlay" onclick="if(event.target===this)closeCompPopup()">
+    <div class="comp-popup">
+      <div class="comp-popup-header">
+        <div class="comp-popup-title" id="popup-title">Complaint Details</div>
+        <button class="icon-btn" onclick="closeCompPopup()"></button>
+      </div>
+      <div id="popup-alert" class="modal-alert"></div>
+      <input type="hidden" id="popup-comp-id" />
+
+      <div id="popup-info" style="background:#f8fafc;border-radius:10px;padding:1rem;margin-bottom:1rem;border:1px solid var(--border);font-size:0.84rem;"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+        <div class="form-group" style="margin:0;">
+          <label>Change Status</label>
+          <select id="popup-status">
+            <option value="Registered">Registered (New)</option>
+            <option value="Working">Working</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Return Pending">Return Pending</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Reassign Department</label>
+          <select id="popup-dept"><option value="">-- Unassigned --</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Admin Note</label>
+        <textarea id="popup-note" placeholder="Reason for change (optional)" style="min-height:55px;resize:vertical;"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeCompPopup()">Close</button>
+        <button class="btn btn-danger" onclick="popupDeleteComp()">Delete</button>
+        <button class="btn btn-primary" onclick="savePopupComp()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!--  LIGHTBOX  -->
+  <div class="modal-overlay" id="lightbox-modal"
+       style="background:rgba(0,0,0,0.95);z-index:10000;"
+       onclick="if(event.target===this)closeLightbox()">
+    <div style="position:relative;width:100%;height:100%;display:flex;justify-content:center;align-items:center;">
+      <button onclick="closeLightbox()" style="position:absolute;top:20px;right:30px;background:none;border:none;color:white;font-size:3rem;cursor:pointer;z-index:10001;">&times;</button>
+      <button onclick="prevLightbox()" style="position:absolute;left:30px;background:none;border:none;color:white;font-size:4rem;cursor:pointer;z-index:10001;">&#10094;</button>
+      <div id="lightbox-content" style="max-width:90%;max-height:90%;display:flex;justify-content:center;align-items:center;"></div>
+      <button onclick="nextLightbox()" style="position:absolute;right:30px;background:none;border:none;color:white;font-size:4rem;cursor:pointer;z-index:10001;">&#10095;</button>
+    </div>
+  </div>
+
+  <!--  TOAST  -->
+  <div id="toast-container"></div>
+
+  <!--  MANAGER EDIT MODAL  -->
+  <div class="modal-overlay" id="mgr-modal" onclick="if(event.target===this)closeMgrModal()">
+    <div class="modal-box">
+      <div class="modal-title" id="mgr-modal-title">Manager Details</div>
+      <div class="modal-alert" id="mgr-modal-alert"></div>
+      <input type="hidden" id="mgr-modal-id" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <div class="form-group"><label>Full Name</label><input id="mgr-edit-name" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Email</label><input id="mgr-edit-email" type="email" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Mobile</label><input id="mgr-edit-mobile" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Assigned City</label><input id="mgr-edit-city" type="text" placeholder="e.g. Mysore" /></div>
+      </div>
+      <div class="form-group" id="mgr-approve-group" style="display:none;">
+<label class="toggle-switch">
+<input type="checkbox" id="mgr-edit-approved" />
+Approved (grants system access)
+</label>
+</div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeMgrModal()">Close</button>
+        <button class="btn btn-danger" onclick="askDelete('manager',document.getElementById('mgr-modal-id').value,document.getElementById('mgr-edit-name').value);closeMgrModal();">Delete</button>
+        <button class="btn btn-primary" id="mgr-save-btn" onclick="saveMgr()">Save / Approve</button>
+      </div>
+    </div>
+  </div>
+
+  <!--  DEPARTMENT EDIT MODAL  -->
+  <div class="modal-overlay" id="dept-modal" onclick="if(event.target===this)closeDeptModal()">
+    <div class="modal-box">
+      <div class="modal-title" id="dept-modal-title">Department Details</div>
+      <div class="modal-alert" id="dept-modal-alert"></div>
+      <input type="hidden" id="dept-modal-id" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <div class="form-group"><label>Name</label><input id="dept-edit-name" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Email</label><input id="dept-edit-email" type="email" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Head Name</label><input id="dept-edit-head" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Contact</label><input id="dept-edit-contact" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Assigned City</label><input id="dept-edit-city" type="text" placeholder="e.g. Mysore" /></div>
+      </div>
+      <div class="form-group" id="dept-approve-group" style="display:none;">
+<label class="toggle-switch">
+<input type="checkbox" id="dept-edit-approved" />
+Approved (grants system access)
+</label>
+</div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeDeptModal()">Close</button>
+        <button class="btn btn-danger" onclick="askDelete('department',document.getElementById('dept-modal-id').value,document.getElementById('dept-edit-name').value);closeDeptModal();">Delete</button>
+        <button class="btn btn-primary" id="dept-save-btn" onclick="saveDept()">Save / Approve</button>
+      </div>
+    </div>
+  </div>
+
+  <!--  USER MODAL  -->
+  <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeUserModal()">
+    <div class="modal-box">
+      <div class="modal-title">User Details</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <div class="form-group"><label>Full Name</label><input id="user-detail-name" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Email</label><input id="user-detail-email" type="email" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Mobile</label><input id="user-detail-mobile" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Address</label><input id="user-detail-address" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Complaints Filed</label><input id="user-detail-count" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+        <div class="form-group"><label>Registered</label><input id="user-detail-reg" type="text" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+      </div>
+      <input type="hidden" id="user-modal-id" />
+      <div style="margin-top:0.85rem;margin-bottom:1rem;">
+        <div style="font-size:0.73rem;font-weight:700;color:var(--text-muted);margin-bottom:0.45rem;text-transform:uppercase;">Complaints Filed</div>
+        <div id="user-complaints-list" style="background:#f1f5f9;border-radius:8px;padding:1rem;max-height:200px;overflow-y:auto;border:1px solid var(--border);font-size:0.8rem;">
+          <span style="color:var(--text-light);">Loading...</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeUserModal()">Close</button>
+        <button class="btn btn-danger" onclick="askDelete('user',document.getElementById('user-modal-id').value,document.getElementById('user-detail-name').value);closeUserModal();">Delete User</button>
+      </div>
+    </div>
+  </div>
+
+  <!--  CONFIRM DELETE  -->
+  <div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirm()">
+    <div class="modal-box" style="max-width:380px;">
+      <div class="modal-title"> Confirm Delete</div>
+      <p style="font-size:0.86rem;color:#475569;margin-bottom:1.15rem;" id="confirm-msg">Are you sure?</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!--  ADMIN COMPLAINT MODAL (All Complaints view)  -->
+  <div class="modal-overlay" id="admin-comp-modal" onclick="if(event.target===this)closeAdminCompModal()">
+    <div class="modal-box" style="max-width:650px;max-height:90vh;overflow-y:auto;">
+      <div class="modal-title">Complaint Details <span id="ac-id" style="font-size:0.88rem;color:var(--text-muted);"></span></div>
+      <div class="modal-alert" id="ac-alert"></div>
+      <input type="hidden" id="ac-hidden-id" />
+
+        <div style="background:#f8fafc;border-radius:10px;padding:1.1rem;margin-bottom:1rem;border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:0.7rem;">
+          <div style="grid-column:1/-1; background:white; padding:1.2rem; border-radius:8px; border:1px solid var(--border); margin-bottom: 0.5rem; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+            <h4 id="ac-title" style="margin-bottom:0.5rem;font-size:1.15rem;color:var(--text);font-weight:700;"></h4>
+            <div id="ac-desc" style="font-size:0.92rem;color:#334155;line-height:1.6;white-space:pre-wrap;margin-bottom:0.8rem;padding-bottom:0.8rem;border-bottom:1px dashed var(--border);"></div>
+            <div style="font-size:0.82rem;color:var(--text-muted);"><i class="fa fa-map-marker-alt" style="color:var(--primary);"></i> <span id="ac-address"></span></div>
+          </div>
+          <div style="font-size:0.8rem;color:#475569;"><i class="fa fa-user"></i> <strong>Filed By:</strong><br/><span id="ac-user"></span></div>
+        <div style="font-size:0.8rem;color:#475569;"><i class="fa fa-calendar-alt"></i> <strong>Dates:</strong><br/><span id="ac-dates"></span></div>
+        <div style="font-size:0.8rem;color:#475569;"><i class="fa fa-info-circle"></i> <strong>Status:</strong><br/><span id="ac-status-badge"></span></div>
+        <div style="font-size:0.8rem;color:#475569;"><i class="fa fa-building"></i> <strong>Assigned To:</strong><br/><span id="ac-assigned-to"></span></div>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);margin-bottom:0.45rem;text-transform:uppercase;">Location Map</div>
+        <div style="font-size:0.8rem;margin-bottom:0.45rem;color:var(--text-muted);">Lat: <span id="ac-lat" style="font-weight:600;">--</span>, Lng: <span id="ac-lng" style="font-weight:600;">--</span></div>
+        <div id="ac-map-container" style="height:200px;border-radius:8px;border:1px solid var(--border);display:none;"></div>
+        <div id="ac-map-error" style="display:none;padding:1rem;text-align:center;color:var(--text-muted);border:1px dashed #cbd5e1;border-radius:8px;">Location not provided.</div>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);margin-bottom:0.45rem;text-transform:uppercase;">Attached Media</div>
+        <div id="ac-media-list" style="display:flex;gap:0.5rem;overflow-x:auto;padding-bottom:0.5rem;">
+          <span style="color:var(--text-light);font-size:0.8rem;">Loading media...</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.2rem;">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);margin-bottom:0.45rem;text-transform:uppercase;">Timeline</div>
+        <div id="ac-history-list" style="background:#f1f5f9;border-radius:8px;padding:1rem;font-size:0.8rem;color:#475569;max-height:150px;overflow-y:auto;">
+          <span style="color:var(--text-light);">Loading history...</span>
+        </div>
+      </div>
+
+      <div id="ac-update-section">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label>Update Status</label>
+            <select id="ac-status">
+              <option value="Registered">Registered (New)</option>
+              <option value="Working">Working</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Return Pending">Return Pending</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Reassign Department</label>
+            <select id="ac-dept"><option value="">-- Unassigned --</option></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Admin Note (Required)</label>
+          <textarea id="ac-note" placeholder="Explain the change..." style="min-height:60px;resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeAdminCompModal()">Close</button>
+        <button class="btn btn-danger" onclick="askDelete('complaint',document.getElementById('ac-hidden-id').value,'Complaint #'+document.getElementById('ac-hidden-id').value);closeAdminCompModal();">Delete</button>
+        <button id="ac-btn-save" class="btn btn-primary" onclick="saveAdminComp()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!--  FOOTER MODAL  -->
+  <div id="footer-modal" class="modal-overlay" style="z-index:9999;"
+       onclick="if(event.target===this)document.getElementById('footer-modal').classList.remove('open')">
+    <div class="modal-box" style="max-width:550px;">
+      <div class="modal-title" id="fm-title">Title</div>
+      <div id="fm-content" style="max-height:60vh;overflow-y:auto;padding-right:0.5rem;margin-bottom:1.5rem;color:var(--text);line-height:1.6;font-size:0.88rem;">Content...</div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="document.getElementById('footer-modal').classList.remove('open')">Close</button></div>
+    </div>
+  </div>
+
+  <script>
+    // 
+    //  STATE
+    // 
+    let allManagers = [], allDepts = [], allComplaints = [], allUsers = [];
+    let pendingDelete = null;
+    let currentDrawerType = null;
+    let currentDrawerEntity = null;
+    let currentDrawerComplaints = [];
+    let currentDrawerTab = 'all';
+    let currentChatRole = null, currentChatId = null, adminChatTimer = null;
+    let serverPollTimer = null;
+    let acMap = null, acMarker = null;
+
+    const viewNames = {
+      dashboard: 'Dashboard',
+      comms: ' Comms Hub',
+      managers: 'Managers',
+      departments: 'Departments',
+      users: 'Users',
+      complaints: 'All Complaints'
+    };
+
+    // 
+    //  INIT
+    // 
+    document.addEventListener('DOMContentLoaded', () => {
+      updateTime();
+      setInterval(updateTime, 1000);
+      loadDashboard();
+      
+      const evtSource = new EventSource('/api/admin/sse');
+      evtSource.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        if (data.type === 'status') {
+          loadOnlineStatus();
+        } else if (data.type === 'message') {
+          pollAdminMessages();
+          loadCommsHub();
+        } else if (data.type === 'traffic') {
+          appendTerminalLog(data.log);
+        }
+      };
+      
+      function appendTerminalLog(t) {
+        const term = document.getElementById('traffic-terminal');
+        if (!term) return;
+        const sc = t.status >= 500 ? '#f87171' : t.status >= 400 ? '#fbbf24' : '#4ade80';
+        const logHtml = `<div style="font-family:monospace; margin-bottom:0.3rem;"><span style="color:#94a3b8;">${t.ip}</span> - - <span style="color:#64748b;">[${t.time}]</span> "${t.method} ${t.path} ${t.protocol || 'HTTP/1.1'}" <span style="color:${sc};">${t.status}</span> -</div>`;
+        const atBottom = term.scrollHeight - term.clientHeight <= term.scrollTop + 50;
+        
+        // Remove empty state if exists
+        if (term.innerHTML.includes('Waiting for incoming traffic')) {
+            term.innerHTML = '';
+        }
+        
+        term.innerHTML += logHtml;
+        if (atBottom) term.scrollTop = term.scrollHeight;
+        
+        // Update stats
+        const reqEl = document.getElementById('quick-reqs');
+        if (reqEl) reqEl.textContent = parseInt(reqEl.textContent || 0) + 1;
+      }
+
+    });
+
+    function updateTime() {
+      const now = new Date();
+      const t = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const d = now.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: '2-digit' });
+      const tEl = document.getElementById('topbar-time');
+      if (tEl) tEl.textContent = t;
+      
+      if (typeof window.serverUptimeSeconds === 'number') {
+          window.serverUptimeSeconds++;
+          let up = window.serverUptimeSeconds;
+          const h = Math.floor(up / 3600); up %= 3600;
+          const m = Math.floor(up / 60); const s = up % 60;
+          const uEl = document.getElementById('stat-uptime');
+          if (uEl) uEl.textContent = `${h}h ${m}m ${s}s`;
+      }
+    }
+
+    // 
+    //  VIEWS
+    // 
+    function showView(name, statusFilter = null, push = true) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      const vEl = document.getElementById('view-' + name);
+      const nEl = document.getElementById('nav-' + name);
+      if (vEl) vEl.classList.add('active');
+      if (nEl) nEl.classList.add('active');
+      document.getElementById('topbar-title').textContent = viewNames[name] || name;
+      if (push) history.pushState({ view: name }, '', '#' + name);
+
+      const viewToggle = document.getElementById('view-toggle-container');
+      if (viewToggle) {
+        if (['managers', 'departments', 'complaints', 'users'].includes(name)) viewToggle.style.display = 'inline-block';
+        else viewToggle.style.display = 'none';
+      }
+
+      if (name === 'dashboard') loadDashboard();
+      else if (name === 'comms') loadCommsHub();
+      if (name === 'terminal') loadServerInfo();
+      else if (name === 'managers') loadManagers();
+      else if (name === 'departments') loadDepartments();
+      else if (name === 'users') loadUsers();
+      else if (name === 'complaints') {
+        const sel = document.getElementById('comp-status');
+        if (sel) {
+          if (statusFilter !== null) sel.value = statusFilter;
+          else {
+            sel.value = '';
+            const sq = document.getElementById('comp-search');
+            if (sq) sq.value = '';
+            const sc = document.getElementById('comp-city');
+            if (sc) sc.value = '';
+          }
+        }
+        loadComplaints();
+      }
+    }
+
+    window.addEventListener('popstate', e => {
+      if (e.state && e.state.view) showView(e.state.view, null, false);
+      else showView('dashboard', null, false);
+    });
+
+    function refreshAll() {
+      const active = document.querySelector('.view.active');
+      if (active) showView(active.id.replace('view-', ''));
+    }
+
+    // 
+    //  SERVER INFO (footer + terminal)
+    // 
+    async function loadServerInfo() {
+      try {
+        const r = await fetch('/api/admin/system');
+        const d = await r.json();
+        if (!d.success) return;
+        const traffic = d.system.recent_traffic || [];
+        const total = traffic.length;
+        const c2xx = traffic.filter(t => t.status >= 200 && t.status < 300).length;
+        const c4xx = traffic.filter(t => t.status >= 400 && t.status < 500).length;
+        const c5xx = traffic.filter(t => t.status >= 500).length;
+        const lastEntry = traffic.length > 0 ? traffic[traffic.length - 1].time : '';
+
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        set('quick-reqs', total);
+        
+        if (d.system.server_name) {
+          set('stat-server', d.system.server_name);
+          set('stat-ip', d.system.ip_address);
+          set('stat-port', d.system.port);
+          set('stat-mac', d.system.mac_address);
+          set('stat-status', d.system.status);
+          set('stat-sessions', d.system.active_sessions);
+
+          
+          window.serverUptimeSeconds = d.system.uptime_seconds;
+        }
+
+        // Update terminal
+        const term = document.getElementById('traffic-terminal');
+        if (term && traffic.length > 0) {
+          const atBottom = term.scrollHeight - term.clientHeight <= term.scrollTop + 50;
+          term.innerHTML = traffic.map(t => {
+            const sc = t.status >= 500 ? '#f87171' : t.status >= 400 ? '#fbbf24' : '#4ade80';
+            return `<div style="font-family:monospace; margin-bottom:0.3rem;"><span style="color:#94a3b8;">${t.ip}</span> - - <span style="color:#64748b;">[${t.time}]</span> "${t.method} ${t.path} ${t.protocol || 'HTTP/1.1'}" <span style="color:${sc};">${t.status}</span> -</div>`;
+          }).join('');
+          if (atBottom) term.scrollTop = term.scrollHeight;
+        }
+      } catch (e) {}
+    }
+
+    // 
+    //  DASHBOARD
+    // 
+    async function loadDashboard() {
+      try {
+        const r = await fetch('/api/admin/stats');
+        const d = await r.json();
+        if (!d.success) return;
+        const s = d.stats;
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        set('s-users', s.users); set('s-mgrs', s.managers); set('s-depts', s.departments);
+        set('s-comps', s.total_complaints); set('s-unassigned', s.new_complaints);
+        set('s-working', s.active_complaints); set('s-resolved', s.resolved_complaints);
+        set('s-return', s.return_complaints);
+      } catch (e) { console.error(e); }
+      loadPendingApprovalTables();
+    }
+
+    async function loadPendingApprovalTables() {
+      try {
+        const [mr, dr] = await Promise.all([
+          fetch('/api/admin/managers').then(r => r.json()),
+          fetch('/api/admin/departments').then(r => r.json())
+        ]);
+
+        const pendingMgr = (mr.managers || []).filter(m => !m.is_approved);
+        document.getElementById('pending-mgr-table').innerHTML = pendingMgr.length === 0
+          ? '<tr class="empty-row"><td colspan="3">No pending approvals </td></tr>'
+          : pendingMgr.map(m => `<tr style="cursor:pointer;" onclick="openMgrModal(${JSON.stringify(m).replace(/"/g,'&quot;')})">
+              <td><strong>${esc(m.name)}</strong></td><td>${esc(m.email)}</td>
+              <td><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openMgrModal(${JSON.stringify(m).replace(/"/g,'&quot;')})">Review</button></td>
+            </tr>`).join('');
+
+        const pendingDept = (dr.departments || []).filter(d => !d.is_approved);
+        document.getElementById('pending-dept-table').innerHTML = pendingDept.length === 0
+          ? '<tr class="empty-row"><td colspan="3">No pending approvals </td></tr>'
+          : pendingDept.map(d => `<tr style="cursor:pointer;" onclick="openDeptModal(${JSON.stringify(d).replace(/"/g,'&quot;')})">
+              <td><strong>${esc(d.name)}</strong></td><td>${esc(d.email)}</td>
+              <td><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openDeptModal(${JSON.stringify(d).replace(/"/g,'&quot;')})">Review</button></td>
+            </tr>`).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    // 
+    //  COMMS HUB
+    // 
+    async function loadCommsHub() {
+      try {
+        const [statusRes, threadsRes] = await Promise.all([
+          fetch('/api/admin/online_status'),
+          fetch('/api/messages/threads')
+        ]);
+        const statusData = await statusRes.json();
+        const threadsData = await threadsRes.json();
+        
+        const grid = document.getElementById('online-status-grid');
+        if (!grid) return;
+        
+        if (!statusData.success) { grid.innerHTML = '<div style="color:var(--red);grid-column:1/-1;padding:1rem;">Failed to load status.</div>'; return; }
+        
+        let all = statusData.entities || [];
+        let threads = (threadsData.success ? threadsData.threads : []);
+        
+        // Merge unread
+        all.forEach(e => {
+            const t = threads.find(x => x.role === e.role && x.id === e.id);
+            if (t && t.unread_count) e.unread_count = t.unread_count;
+        });
+        
+        const onlineCount = all.filter(e => e.is_online).length;
+        const cntEl = document.getElementById('online-count-label');
+        if (cntEl) cntEl.textContent = `${onlineCount} online of ${all.length}`;
+        
+        if (!all.length) {
+          grid.innerHTML = '<div style="color:var(--text-light);font-size:0.8rem;grid-column:1/-1;text-align:center;padding:1rem;">No contacts found.</div>';
+        } else {
+          grid.innerHTML = all.map(e => {
+            const isOnline = !!e.is_online;
+            const lastSeen = e.last_seen ? timeAgo(e.last_seen) : null;
+            const statusText = isOnline ? 'Online now' : (lastSeen ? `Last seen: ${lastSeen}` : 'Offline');
+            return `<div class="online-card" onclick="startChatWith('${e.role}',${e.id},'${esc(e.name)}')">
+              <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+              <div style="min-width:0; width:100%;">
+                <div class="online-card-name" style="display:flex; justify-content:space-between;">
+                  <span>${esc(e.name)}</span>
+                  ${e.unread_count ? `<span style="background:var(--red);color:white;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:10px;font-weight:bold;">${e.unread_count}</span>` : ''}
+                </div>
+                <div class="online-card-role">${e.role}  ${e.city || ''}</div>
+                <div class="online-card-seen">${statusText}</div>
+              </div>
+            </div>`;
+          }).join('');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      loadServerInfo();
+    }
+
+    async function loadOnlineStatus() {
+      const grid = document.getElementById('online-status-grid');
+      if (!grid) return;
+      grid.innerHTML = '<div style="color:var(--text-light);font-size:0.8rem;grid-column:1/-1;text-align:center;padding:1rem;">Loading...</div>';
+      try {
+        const r = await fetch('/api/admin/online_status');
+        const d = await r.json();
+        if (!d.success) { grid.innerHTML = '<div style="color:var(--red);grid-column:1/-1;padding:1rem;">Failed to load online status.</div>'; return; }
+        const all = d.entities || [];
+        const onlineCount = all.filter(e => e.is_online).length;
+        const cntEl = document.getElementById('online-count-label');
+        if (cntEl) cntEl.textContent = `${onlineCount} online of ${all.length}`;
+
+        if (!all.length) {
+          grid.innerHTML = '<div style="color:var(--text-light);font-size:0.8rem;grid-column:1/-1;text-align:center;padding:1rem;">No approved managers or departments yet.</div>';
+          return;
+        }
+
+          grid.innerHTML = all.map(e => {
+            const isOnline = !!e.is_online;
+            const lastSeen = e.last_seen ? timeAgo(e.last_seen) : null;
+            const statusText = isOnline ? 'Online now' : (lastSeen ? `Last seen: ${lastSeen}` : 'Never logged in');
+            return `<div class="online-card" onclick="startChatWith('${e.role}',${e.id},'${esc(e.name)}')">
+              <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+              <div style="min-width:0;">
+                <div class="online-card-name" style="display:flex; justify-content:space-between;">
+                  <span>${esc(e.name)}</span>
+                  ${e.unread_count ? `<span style="background:var(--red);color:white;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:10px;font-weight:bold;">${e.unread_count}</span>` : ''}
+                </div>
+                <div class="online-card-role">${e.role}  ${e.city || ''}</div>
+                <div class="online-card-seen">${statusText}</div>
+              </div>
+            </div>`;
+          }).join('');
+      } catch (e) {
+        grid.innerHTML = `<div style="color:var(--red);grid-column:1/-1;padding:1rem;">Error: ${e.message}</div>`;
+      }
+    }
+
+    function timeAgo(dateStr) {
+      if (!dateStr) return 'Never';
+      try {
+        const d = new Date(dateStr.replace(' ', 'T'));
+        const seconds = Math.floor((new Date() - d) / 1000);
+        if (seconds < 60) return `${seconds}s ago`;
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        return d.toLocaleDateString('en-IN');
+      } catch (ex) { return dateStr; }
+    }
+
+    function startChatWith(role, id, name) {
+      openAdminChat(role, id, name);
+    }
+
+    // 
+    //  CHAT
+    // 
+    async function loadChatThreads() { return; // Replaced by loadCommsHub merge
+
+      try {
+        const res = await fetch('/api/messages/threads');
+        const data = await res.json();
+        if (data.success) {
+          const list = document.getElementById('chat-thread-list');
+          if (!data.threads.length) {
+            list.innerHTML = '<div style="padding:1rem;color:var(--text-light);font-size:0.78rem;text-align:center;">No conversations yet.</div>';
+            return;
+          }
+            list.innerHTML = data.threads.map(t => {
+              let badge = t.unread_count ? `<span style="background:var(--red);color:white;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:10px;margin-left:0.5rem;font-weight:bold;">${t.unread_count}</span>` : '';
+              return `
+            <div class="chat-thread ${currentChatRole===t.role && currentChatId===t.id ? 'active' : ''}"
+                 onclick="openAdminChat('${t.role}',${t.id},'${t.name.replace(/'/g,"\\'")}')"
+                 data-online="${t.is_online ? 'true' : 'false'}" data-seen="${t.last_seen || ''}">
+              <div class="chat-thread-name">${t.name} <span style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;">(${t.role})</span>${badge}</div>
+              <div class="chat-thread-meta"> ${t.city || 'No city'}</div>
+            </div>
+          `}).join('');
+        }
+      } catch (e) {}
+    }
+
+    function closeAdminChat() {
+      document.getElementById('chat-main-area').style.display = 'none';
+      const lst = document.getElementById('chat-thread-list');
+      if (lst) lst.style.display = 'block';
+      currentChatId = null;
+    }
+
+    function openAdminChat(role, id, name) {
+        document.getElementById('chat-empty-state').style.display = 'none';
+        document.getElementById('chat-main-area').style.display = 'flex';
+        if (window.innerWidth <= 800) {
+          document.getElementById('chat-thread-list').style.display = 'none';
+        }
+        currentChatRole = role;
+        currentChatId = id;
+        document.getElementById('chat-messages').innerHTML = '<div style="padding:1rem;color:var(--text-light);font-size:0.8rem;text-align:center;">Loading...</div>';
+        
+        const hdr = document.getElementById('chat-main-title');
+        if (hdr) hdr.textContent = name;
+        
+        const statusHdr = document.getElementById('chat-main-status');
+        if (statusHdr) {
+            // Find the thread data in the DOM to extract online status
+            const threads = document.querySelectorAll('.chat-thread');
+            let found = false;
+            for(let t of threads) {
+               if(t.innerHTML.includes(name) && t.innerHTML.includes(role)) {
+                   const isOnline = t.getAttribute('data-online') === 'true';
+                   const seen = t.getAttribute('data-seen');
+                   statusHdr.textContent = isOnline ? 'Online now' : (seen ? 'Last seen: ' + timeAgo(seen) : 'Offline');
+                   found = true;
+                   break;
+               }
+            }
+            if(!found) statusHdr.textContent = '';
+        }
+        
+        pollAdminMessages();
+        loadChatThreads(); // Mark as read visually
+      }
+
+    async function pollAdminMessages() {
+      if (!currentChatRole || !currentChatId) return;
+      try {
+        const res = await fetch(`/api/messages/fetch?role1=admin&id1=1&role2=${currentChatRole}&id2=${currentChatId}`);
+        const data = await res.json();
+        if (data.success) {
+          const container = document.getElementById('chat-messages');
+          const atBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 50;
+          container.innerHTML = data.messages.map(m => {
+            const isMe = m.sender_role === 'admin';
+            return `<div class="chat-bubble ${isMe ? 'sent' : 'received'}">${m.content}</div>`;
+          }).join('');
+          if (atBottom) container.scrollTop = container.scrollHeight;
+        }
+      } catch (e) {}
+    }
+
+    async function sendAdminMessage() {
+      if (!currentChatRole || !currentChatId) return;
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      const container = document.getElementById('chat-messages');
+      container.innerHTML += `<div class="chat-bubble sent" style="opacity:0.7">${msg}</div>`;
+      container.scrollTop = container.scrollHeight;
+      await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sender_role: 'admin', sender_id: 1, receiver_role: currentChatRole, receiver_id: currentChatId, content: msg })
+      });
+      pollAdminMessages();
+    }
+
+    // 
+    //  MANAGERS
+    // 
+    async function loadManagers() {
+      const tbl = document.getElementById('mgr-table');
+      tbl.innerHTML = '<tr class="empty-row"><td colspan="8">Loading</td></tr>';
+      try {
+        const r = await fetch('/api/admin/managers');
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error);
+        allManagers = d.managers || [];
+        document.getElementById('mgr-count').textContent = `(${allManagers.length})`;
+        renderManagers(allManagers);
+      } catch (e) { tbl.innerHTML = `<tr class="empty-row"><td colspan="8">Error: ${e.message}</td></tr>`; }
+    }
+
+    function renderManagers(list) {
+      const tbl = document.getElementById('mgr-table');
+      if (!list.length) { tbl.innerHTML = '<tr class="empty-row"><td colspan="8">No managers found.</td></tr>'; return; }
+      tbl.innerHTML = list.map(m => {
+        const onlineDot = m.is_online
+          ? `<span class="online-pill"><span class="dot on"></span> Online</span>`
+          : `<span class="online-pill" style="color:var(--text-light);"><span class="dot off"></span> Offline</span>`;
+        return `<tr style="cursor:pointer;" onclick="openEntityDrawer('manager',${JSON.stringify(m).replace(/"/g,'&quot;')})">
+          <td><strong>${esc(m.name)}</strong></td>
+          <td>${esc(m.email)}</td>
+          <td style="font-family:monospace;font-size:0.75rem;">${esc(m.manager_id || '')}</td>
+          <td>${esc(m.mobile_number || '')}</td>
+          <td>${esc(m.assigned_city || '')}</td>
+          <td>${m.is_approved ? '<span class="badge badge-approved"> Approved</span>' : '<span class="badge badge-pending"> Pending</span>'}</td>
+          <td>${onlineDot}</td>
+          <td style="color:var(--text-light);font-size:0.75rem;">${esc(m.created_at || '')}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterManagers() {
+      let q = document.getElementById('mgr-search').value.toLowerCase();
+      if (q.length === 1) q = '';
+      renderManagers(allManagers.filter(m => (m.name || '').toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q)));
+    }
+
+    // 
+    //  DEPARTMENTS
+    // 
+    async function loadDepartments() {
+      const tbl = document.getElementById('dept-table');
+      tbl.innerHTML = '<tr class="empty-row"><td colspan="8">Loading</td></tr>';
+      try {
+        const r = await fetch('/api/admin/departments');
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error);
+        allDepts = d.departments || [];
+        document.getElementById('dept-count').textContent = `(${allDepts.length})`;
+        renderDepts(allDepts);
+      } catch (e) { tbl.innerHTML = `<tr class="empty-row"><td colspan="8">Error: ${e.message}</td></tr>`; }
+    }
+
+    function renderDepts(list) {
+      const tbl = document.getElementById('dept-table');
+      if (!list.length) { tbl.innerHTML = '<tr class="empty-row"><td colspan="8">No departments found.</td></tr>'; return; }
+      tbl.innerHTML = list.map(d => {
+        const onlineDot = d.is_online
+          ? `<span class="online-pill"><span class="dot on"></span> Online</span>`
+          : `<span class="online-pill" style="color:var(--text-light);"><span class="dot off"></span> Offline</span>`;
+        return `<tr style="cursor:pointer;" onclick="openEntityDrawer('department',${JSON.stringify(d).replace(/"/g,'&quot;')})">
+          <td><strong>${esc(d.name)}</strong></td>
+          <td>${esc(d.email)}</td>
+          <td style="font-family:monospace;font-size:0.75rem;">${esc(d.dept_id || '')}</td>
+          <td>${esc(d.head_name || '')}</td>
+          <td>${esc(d.assigned_city || '')}</td>
+          <td style="text-align:center;">${d.complaint_count || 0}</td>
+          <td>${d.is_approved ? '<span class="badge badge-approved"> Approved</span>' : '<span class="badge badge-pending"> Pending</span>'}</td>
+          <td>${onlineDot}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterDepts() {
+      let q = document.getElementById('dept-search').value.toLowerCase();
+      if (q.length === 1) q = '';
+      renderDepts(allDepts.filter(d => (d.name || '').toLowerCase().includes(q) || (d.email || '').toLowerCase().includes(q)));
+    }
+
+    // 
+    //  ENTITY DRAWER
+    // 
+    async function openEntityDrawer(type, entity) {
+      currentDrawerType = type;
+      currentDrawerEntity = entity;
+      currentDrawerTab = 'all';
+      currentDrawerComplaints = [];
+
+      document.getElementById('drawer-overlay').classList.add('open');
+
+      const isMgr = type === 'manager';
+      const name = entity.name || '?';
+      const initial = name[0].toUpperCase();
+      document.getElementById('drawer-title').textContent = (isMgr ? ' ' : ' ') + esc(name);
+
+      const onlineHtml = entity.is_online
+        ? `<span class="online-pill" style="font-size:0.78rem;color:#16a34a;"><span class="dot on" style="width:8px;height:8px;"></span> Online now</span>`
+        : `<span class="online-pill" style="font-size:0.75rem;color:var(--text-muted);"><span class="dot off" style="width:8px;height:8px;"></span> Offline  ${timeAgo(entity.last_seen)}</span>`;
+
+      let profileFields = '';
+      if (isMgr) {
+        profileFields = `
+          <div><div class="profile-detail-label">Email</div><div class="profile-detail-value">${esc(entity.email || '')}</div></div>
+          <div><div class="profile-detail-label">Mobile</div><div class="profile-detail-value">${esc(entity.mobile_number || '')}</div></div>
+          <div><div class="profile-detail-label">Assigned City</div><div class="profile-detail-value">${esc(entity.assigned_city || '')}</div></div>
+          <div><div class="profile-detail-label">Registered</div><div class="profile-detail-value">${esc(entity.created_at || '')}</div></div>
+        `;
+      } else {
+        profileFields = `
+          <div><div class="profile-detail-label">Email</div><div class="profile-detail-value">${esc(entity.email || '')}</div></div>
+          <div><div class="profile-detail-label">Head Name</div><div class="profile-detail-value">${esc(entity.head_name || '')}</div></div>
+          <div><div class="profile-detail-label">Contact</div><div class="profile-detail-value">${esc(entity.contact_number || '')}</div></div>
+          <div><div class="profile-detail-label">Assigned City</div><div class="profile-detail-value">${esc(entity.assigned_city || '')}</div></div>
+          <div><div class="profile-detail-label">Total Complaints</div><div class="profile-detail-value">${entity.complaint_count || 0}</div></div>
+          <div><div class="profile-detail-label">Registered</div><div class="profile-detail-value">${esc(entity.created_at || '')}</div></div>
+        `;
+      }
+
+      const avatarStyle = isMgr
+        ? 'background:linear-gradient(135deg,#6366f1,#7c3aed);'
+        : 'background:linear-gradient(135deg,#0d9488,#0891b2);';
+
+      document.getElementById('drawer-body').innerHTML = `
+        <div class="profile-card">
+          <div class="profile-card-header">
+            <div class="profile-avatar" style="${avatarStyle}">${initial}</div>
+            <div style="flex:1;">
+              <div class="profile-name">${esc(name)}</div>
+              <div class="profile-id">${esc(isMgr ? (entity.manager_id || 'Pending ID') : (entity.dept_id || 'Pending ID'))}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;">
+              ${entity.is_approved ? '<span class="badge badge-approved"> Approved</span>' : '<span class="badge badge-pending"> Pending</span>'}
+              ${onlineHtml}
+            </div>
+          </div>
+          <div class="profile-details-grid">${profileFields}</div>
+        </div>
+
+        <div class="section-title"> Complaints</div>
+        <div class="comp-tabs" id="drawer-comp-tabs">
+          <div class="comp-tab active" data-tab="all" onclick="switchDrawerTab('all')">All</div>
+          <div class="comp-tab" data-tab="registered" onclick="switchDrawerTab('registered')">Registered</div>
+          <div class="comp-tab" data-tab="assigned" onclick="switchDrawerTab('assigned')">Assigned</div>
+          <div class="comp-tab" data-tab="working" onclick="switchDrawerTab('working')">Working</div>
+          <div class="comp-tab" data-tab="resolved" onclick="switchDrawerTab('resolved')">Resolved</div>
+          <div class="comp-tab" data-tab="return_pending" onclick="switchDrawerTab('return_pending')">Return Pending</div>
+        </div>
+        <div class="comp-list" id="drawer-comp-list">
+          <div style="color:var(--text-light);text-align:center;padding:2rem;font-size:0.83rem;">Loading complaints...</div>
+        </div>
+      `;
+
+      await loadDrawerComplaints(type, entity);
+    }
+
+    async function loadDrawerComplaints(type, entity) {
+      const listEl = document.getElementById('drawer-comp-list');
+      if (!listEl) return;
+      try {
+        let url = '/api/admin/complaints?';
+        if (type === 'manager') {
+          if (entity.assigned_city) url += 'city=' + encodeURIComponent(entity.assigned_city);
+        } else {
+          url += 'dept_id=' + entity.id;
+        }
+
+        const r = await fetch(url);
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error || 'Failed');
+        currentDrawerComplaints = d.complaints || [];
+        renderDrawerComplaints();
+      } catch (e) {
+        if (listEl) listEl.innerHTML = `<div style="color:var(--red);padding:1rem;text-align:center;">Error: ${e.message}</div>`;
+      }
+    }
+
+    function switchDrawerTab(tab) {
+      currentDrawerTab = tab;
+      document.querySelectorAll('#drawer-comp-tabs .comp-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+      });
+      renderDrawerComplaints();
+    }
+
+    function renderDrawerComplaints() {
+      const listEl = document.getElementById('drawer-comp-list');
+      if (!listEl) return;
+
+      let filtered = currentDrawerComplaints;
+      if (currentDrawerTab !== 'all') {
+        const tabMap = {
+          'registered': c => (c.status || '') === 'Registered',
+          'assigned': c => (c.status || '').toLowerCase().startsWith('task assigned'),
+          'working': c => (c.status || '') === 'Working',
+          'resolved': c => (c.status || '') === 'Resolved',
+          'return_pending': c => (c.status || '') === 'Return Pending',
+        };
+        if (tabMap[currentDrawerTab]) filtered = currentDrawerComplaints.filter(tabMap[currentDrawerTab]);
+      }
+
+      if (!filtered.length) {
+        listEl.innerHTML = '<div style="color:var(--text-light);text-align:center;padding:2rem;font-size:0.82rem;">No complaints in this category.</div>';
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(c => `
+        <div class="comp-card" onclick="openAdminCompModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+          <div style="flex:1;min-width:0;">
+            <div class="comp-card-title">#${c.id} - ${esc(c.title_en || c.title)}</div>
+            <div class="comp-card-meta">${esc(c.city || '')}  ${esc(c.address || '')}  ${esc(c.created_at || '')}</div>
+            <div class="comp-card-meta" style="margin-top:0.12rem;">Dept: ${esc(c.department_name || 'Unassigned')}</div>
+          </div>
+          <div style="flex-shrink:0;">${statusBadge(c.status)}</div>
+        </div>
+      `).join('');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer-overlay').classList.remove('open');
+      currentDrawerType = null;
+      currentDrawerEntity = null;
+      currentDrawerComplaints = [];
+    }
+
+    function openEditModal() {
+      if (currentDrawerType === 'manager' && currentDrawerEntity) openMgrModal(currentDrawerEntity);
+      else if (currentDrawerType === 'department' && currentDrawerEntity) openDeptModal(currentDrawerEntity);
+    }
+
+    function drawerDelete() {
+      if (!currentDrawerEntity) return;
+      const type = currentDrawerType;
+      const name = currentDrawerEntity.name;
+      const id = currentDrawerEntity.id;
+      closeDrawer();
+      askDelete(type, id, name);
+    }
+
+    // 
+    //  COMPLAINT POPUP (from drawer)
+    // 
+    function openCompPopup(c) {
+      document.getElementById('popup-comp-id').value = c.id;
+      document.getElementById('popup-title').textContent = `Complaint #${c.id}`;
+      document.getElementById('popup-alert').style.display = 'none';
+
+      document.getElementById('popup-info').innerHTML = `
+        <div style="font-weight:800;font-size:0.93rem;margin-bottom:0.45rem;color:var(--text);">${esc(c.title_en || c.title)}</div>
+        <div style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.45rem;">${esc(c.address || '')}  ${esc(c.city || '')}</div>
+        <div style="font-size:0.83rem;line-height:1.5;margin-bottom:0.7rem;color:#334155;">${esc(c.details || '')}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;font-size:0.75rem;">
+          <div><div style="color:var(--text-light);text-transform:uppercase;font-weight:700;font-size:0.6rem;margin-bottom:0.18rem;">Status</div>${statusBadge(c.status)}</div>
+          <div><div style="color:var(--text-light);text-transform:uppercase;font-weight:700;font-size:0.6rem;margin-bottom:0.18rem;">Filed By</div><div style="font-weight:600;">${esc(c.user_name || '')}</div></div>
+          <div><div style="color:var(--text-light);text-transform:uppercase;font-weight:700;font-size:0.6rem;margin-bottom:0.18rem;">Department</div><div style="font-weight:600;">${esc(c.department_name || 'Unassigned')}</div></div>
+          <div style="grid-column:1/-1;"><div style="color:var(--text-light);text-transform:uppercase;font-weight:700;font-size:0.6rem;margin-bottom:0.18rem;">Date Filed</div><div style="font-weight:600;">${esc(c.created_at || '')}</div></div>
+        </div>
+      `;
+
+      // Status dropdown
+      const statusSel = document.getElementById('popup-status');
+      // Reset options
+      statusSel.innerHTML = `
+        <option value="Registered">Registered (New)</option>
+        <option value="Working">Working</option>
+        <option value="Resolved">Resolved</option>
+        <option value="Return Pending">Return Pending</option>
+      `;
+      const s = (c.status || '').toLowerCase();
+let val = c.status || 'Registered';
+if (s.startsWith('task assigned')) val = 'Working';
+else if (s === 'active') val = 'Working';
+
+const exists = Array.from(statusSel.options).some(o => o.value === val);
+if (!exists && val) {
+    const o = document.createElement('option');
+    o.value = val; o.textContent = val;
+    statusSel.insertBefore(o, statusSel.firstChild);
+}
+statusSel.value = val;
+
+      // Dept dropdown
+const deptSel = document.getElementById('popup-dept');
+deptSel.innerHTML = '<option value="">-- Unassigned --</option>';
+allDepts.forEach(dept => {
+    if (dept.is_approved == 1 || dept.is_approved === true || dept.id == c.department_id) {
+        const o = document.createElement('option');
+        o.value = dept.id;
+        o.textContent = dept.name;
+        deptSel.appendChild(o);
+    }
+});
+deptSel.value = c.department_id || '';
+
+      document.getElementById('popup-note').value = '';
+      document.getElementById('comp-popup-overlay').classList.add('open');
+    }
+
+    function closeCompPopup() { document.getElementById('comp-popup-overlay').classList.remove('open'); }
+
+    async function savePopupComp() {
+      const id = document.getElementById('popup-comp-id').value;
+      const status = document.getElementById('popup-status').value;
+      const deptId = document.getElementById('popup-dept').value;
+      let note = document.getElementById('popup-note').value.trim();
+      if (!note) note = `Admin updated status to ${status}.`;
+      const alertEl = document.getElementById('popup-alert');
+      try {
+        const r = await fetch('/api/admin/complaints/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: parseInt(id), status, department_id: deptId ? parseInt(deptId) : null, note })
+        });
+        const d = await r.json();
+        if (d.success) {
+          closeCompPopup();
+          toast('Complaint updated!', 'success');
+          if (currentDrawerEntity) await loadDrawerComplaints(currentDrawerType, currentDrawerEntity);
+        } else {
+          alertEl.textContent = d.error || 'Failed to update';
+          alertEl.style.display = 'block';
+        }
+      } catch (e) {
+        alertEl.textContent = 'Server error';
+        alertEl.style.display = 'block';
+      }
+    }
+
+    function popupDeleteComp() {
+      const id = document.getElementById('popup-comp-id').value;
+      closeCompPopup();
+      askDelete('complaint', id, 'Complaint #' + id);
+    }
+
+    // 
+    //  MANAGER EDIT MODAL
+    // 
+    function openMgrModal(m) {
+      document.getElementById('mgr-modal-id').value = m.id;
+      document.getElementById('mgr-edit-name').value = m.name || '';
+      document.getElementById('mgr-edit-email').value = m.email || '';
+      document.getElementById('mgr-edit-mobile').value = m.mobile_number || '';
+      const cityInput = document.getElementById('mgr-edit-city');
+      cityInput.value = m.assigned_city || '';
+      cityInput.readOnly = false;
+      cityInput.style.background = '#fff';
+      document.getElementById('mgr-edit-approved').checked = !!m.is_approved;
+      document.getElementById('mgr-modal-alert').style.display = 'none';
+      document.getElementById('mgr-modal').classList.add('open');
+    }
+
+    function closeMgrModal() { document.getElementById('mgr-modal').classList.remove('open'); }
+
+    async function saveMgr() {
+      const alertEl = document.getElementById('mgr-modal-alert');
+      const id = document.getElementById('mgr-modal-id').value;
+      const city = document.getElementById('mgr-edit-city').value.trim();
+      if (!city) { alertEl.textContent = 'City is required.'; alertEl.style.display = 'block'; return; }
+      try {
+        const r = await fetch('/api/admin/managers/update', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: parseInt(id), assigned_city: city, is_approved: 1 })
+        });
+        const d = await r.json();
+        if (d.success) { closeMgrModal(); toast('Manager updated!', 'success'); loadManagers(); loadDashboard(); }
+        else { alertEl.textContent = d.error || 'Failed'; alertEl.style.display = 'block'; }
+      } catch (e) { alertEl.textContent = 'Server error'; alertEl.style.display = 'block'; }
+    }
+
+    // 
+    //  DEPARTMENT EDIT MODAL
+    // 
+    function openDeptModal(d) {
+      document.getElementById('dept-modal-id').value = d.id;
+      document.getElementById('dept-edit-name').value = d.name || '';
+      document.getElementById('dept-edit-email').value = d.email || '';
+      document.getElementById('dept-edit-head').value = d.head_name || '';
+      document.getElementById('dept-edit-contact').value = d.contact_number || '';
+      const cityInput = document.getElementById('dept-edit-city');
+      cityInput.value = d.assigned_city || '';
+      cityInput.readOnly = false;
+      cityInput.style.background = '#fff';
+      document.getElementById('dept-edit-approved').checked = !!d.is_approved;
+      document.getElementById('dept-modal-alert').style.display = 'none';
+      document.getElementById('dept-modal').classList.add('open');
+    }
+
+    function closeDeptModal() { document.getElementById('dept-modal').classList.remove('open'); }
+
+    async function saveDept() {
+      const id = document.getElementById('dept-modal-id').value;
+      const alertEl = document.getElementById('dept-modal-alert');
+      try {
+        const r = await fetch('/api/admin/departments/update', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: parseInt(id),
+            assigned_city: document.getElementById('dept-edit-city').value,
+            is_approved: 1
+          })
+        });
+        const d = await r.json();
+        if (d.success) { closeDeptModal(); toast('Department updated!', 'success'); loadDepartments(); loadDashboard(); }
+        else { alertEl.textContent = d.error || 'Failed'; alertEl.style.display = 'block'; }
+      } catch (e) { alertEl.textContent = 'Server error'; alertEl.style.display = 'block'; }
+    }
+
+    // 
+    //  USERS
+    // 
+    async function loadUsers(q = '') {
+      if (q.length === 1) q = '';
+      const tbl = document.getElementById('user-table');
+      tbl.innerHTML = '<tr class="empty-row"><td colspan="7">Loading</td></tr>';
+      try {
+        const r = await fetch(`/api/admin/users?search=${encodeURIComponent(q)}`);
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error);
+        allUsers = d.users || [];
+        document.getElementById('user-count').textContent = `(${allUsers.length})`;
+        tbl.innerHTML = allUsers.length === 0
+          ? '<tr class="empty-row"><td colspan="7">No users found.</td></tr>'
+          : allUsers.map(u => `<tr style="cursor:pointer;" onclick="openUserModal(${JSON.stringify(u).replace(/"/g,'&quot;')})">
+              <td><strong>${esc(u.name)}</strong></td>
+              <td>${esc(u.email)}</td>
+              <td>${esc(u.mobile_number || '')}</td>
+              <td style="max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(u.address || '')}</td>
+              <td style="text-align:center;">${u.complaint_count || 0}</td>
+              <td style="color:var(--text-light);font-size:0.75rem;">${esc(u.created_at || '')}</td>
+              <td><button class="action-btn-sm btn-del" onclick="event.stopPropagation();askDelete('user','${u.id}','${esc(u.name)}')">Delete</button></td>
+            </tr>`).join('');
+      } catch (e) { tbl.innerHTML = `<tr class="empty-row"><td colspan="7">Error: ${e.message}</td></tr>`; }
+    }
+
+    let userSearchTimer;
+    function searchUsers() {
+      clearTimeout(userSearchTimer);
+      let q = document.getElementById('user-search').value;
+      if (q.length === 1) q = '';
+      userSearchTimer = setTimeout(() => loadUsers(q), 400);
+    }
+
+    async function openUserModal(u) {
+      document.getElementById('user-modal-id').value = u.id;
+      document.getElementById('user-detail-name').value = u.name || '';
+      document.getElementById('user-detail-email').value = u.email || '';
+      document.getElementById('user-detail-mobile').value = u.mobile_number || '';
+      document.getElementById('user-detail-address').value = u.address || '';
+      document.getElementById('user-detail-count').value = u.complaint_count || 0;
+      document.getElementById('user-detail-reg').value = u.created_at || '';
+
+      const listEl = document.getElementById('user-complaints-list');
+      listEl.innerHTML = '<span style="color:var(--text-light);">Loading...</span>';
+      document.getElementById('user-modal').classList.add('open');
+
+      try {
+        const r = await fetch('/api/admin/complaints');
+        const d = await r.json();
+        if (d.success) {
+          const userComps = d.complaints.filter(c => c.user_email === u.email);
+          listEl.innerHTML = userComps.length === 0
+            ? '<span style="color:var(--text-light);">No complaints filed by this user.</span>'
+            : userComps.map(c => `
+              <div class="comp-card" style="margin-bottom:0.5rem;" onclick="closeUserModal();openAdminCompModal(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+                <div style="flex:1;min-width:0;">
+                  <div class="comp-card-title">#${c.id} - ${esc(c.title_en || c.title)}</div>
+                  <div class="comp-card-meta">${esc(c.city || '')}  ${esc(c.address || '')}  ${esc(c.created_at || '')}</div>
+                  <div class="comp-card-meta" style="margin-top:0.12rem;">Dept: ${esc(c.department_name || 'Unassigned')}</div>
+                </div>
+                <div style="flex-shrink:0;">${statusBadge(c.status)}</div>
+              </div>`).join('');
+        }
+      } catch (e) { listEl.innerHTML = '<span style="color:var(--red);">Failed to load.</span>'; }
+    }
+
+    function closeUserModal() { document.getElementById('user-modal').classList.remove('open'); }
+
+    // 
+    //  ALL COMPLAINTS
+    // 
+    async function loadComplaints() {
+      const tbl = document.getElementById('comp-table');
+      tbl.innerHTML = '<tr class="empty-row"><td colspan="7">Loading</td></tr>';
+      const search = document.getElementById('comp-search')?.value || '';
+      const status = document.getElementById('comp-status')?.value || '';
+      const city = document.getElementById('comp-city')?.value || '';
+      const deptId = document.getElementById('comp-dept')?.value || '';
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (status) params.append('status', status);
+      if (city) params.append('city', city);
+      if (deptId) params.append('dept_id', deptId);
+      try {
+        const r = await fetch('/api/admin/complaints?' + params);
+        const d = await r.json();
+        if (!d.success) throw new Error(d.error);
+        allComplaints = d.complaints || [];
+        document.getElementById('comp-count').textContent = `(${allComplaints.length})`;
+
+        const cityEl = document.getElementById('comp-city');
+        if (cityEl && d.cities && cityEl.options.length <= 1) {
+          d.cities.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; cityEl.appendChild(o); });
+        }
+        const deptEl = document.getElementById('comp-dept');
+        if (deptEl && d.departments && deptEl.options.length <= 1) {
+          d.departments.forEach(dep => { const o = document.createElement('option'); o.value = dep.id; o.textContent = dep.name; deptEl.appendChild(o); });
+        }
+
+        tbl.innerHTML = allComplaints.length === 0
+          ? '<tr class="empty-row"><td colspan="7">No complaints match your filters.</td></tr>'
+          : allComplaints.map(c => `<tr onclick="openAdminCompModal(${JSON.stringify(c).replace(/"/g,'&quot;')})" style="cursor:pointer;">
+              <td style="font-family:monospace;font-size:0.78rem;">#${c.id}</td>
+              <td style="max-width:200px;"><strong>${esc(c.title_en || c.title)}</strong><div style="font-size:0.68rem;color:var(--text-light);">${esc(c.address || '')}</div></td>
+              <td>${esc(c.city || '')}</td>
+              <td>${statusBadge(c.status)}</td>
+              <td>${esc(c.department_name || 'Unassigned')}</td>
+              <td>${esc(c.user_name || '')}<div style="font-size:0.68rem;color:var(--text-light);">${esc(c.user_email || '')}</div></td>
+              <td style="color:var(--text-light);font-size:0.75rem;">${esc(c.created_at || '')}</td>
+            </tr>`).join('');
+      } catch (e) { tbl.innerHTML = `<tr class="empty-row"><td colspan="7">Error: ${e.message}</td></tr>`; }
+    }
+
+    let compFilterTimer;
+    function filterComplaints() {
+      clearTimeout(compFilterTimer);
+      compFilterTimer = setTimeout(loadComplaints, 350);
+    }
+
+    function jumpToComplaints(status = '', city = '', deptId = '') {
+      document.getElementById('comp-search').value = '';
+      document.getElementById('comp-status').value = status;
+      const cityEl = document.getElementById('comp-city');
+      if (cityEl) {
+        if (![...cityEl.options].find(o => o.value === city) && city !== '') {
+          const o = document.createElement('option'); o.value = city; o.textContent = city; cityEl.appendChild(o);
+        }
+        cityEl.value = city;
+      }
+      const deptEl = document.getElementById('comp-dept');
+      if (deptEl) {
+        if (![...deptEl.options].find(o => o.value == deptId) && deptId !== '') {
+          const o = document.createElement('option'); o.value = deptId; o.textContent = 'Dept #' + deptId; deptEl.appendChild(o);
+        }
+        deptEl.value = deptId;
+      }
+      showView('complaints');
+    }
+
+    // 
+    //  ADMIN COMPLAINT MODAL (all complaints view)
+    // 
+    async function openAdminCompModal(c) {
+  if (allDepts.length === 0) {
+      await loadDepartments();
+  }
+      document.getElementById('ac-hidden-id').value = c.id;
+      document.getElementById('ac-id').textContent = '#' + c.id;
+      
+        // Localization Injection
+        window.currentComplaintData = c;
+        document.getElementById('ac-title').textContent = c.title_en || c.title || '';
+        document.getElementById('ac-desc').textContent = c.details_en || c.details || 'No description provided.';
+        
+        let transBtn = document.getElementById('ac-translate-btn');
+        if (!transBtn) {
+            transBtn = document.createElement('button');
+            transBtn.id = 'ac-translate-btn';
+            transBtn.className = 'btn btn-sm btn-secondary';
+            transBtn.style.marginTop = '0.5rem';
+            transBtn.textContent = 'View Original Language';
+            transBtn.onclick = function() {
+                const isOrig = this.getAttribute('data-is-orig') === 'true';
+                const comp = window.currentComplaintData;
+                if (!isOrig) {
+                    document.getElementById('ac-title').textContent = comp.title || '';
+                    document.getElementById('ac-desc').textContent = comp.details || 'No description provided.';
+                    this.textContent = 'View English Translation';
+                    this.setAttribute('data-is-orig', 'true');
+                } else {
+                    document.getElementById('ac-title').textContent = comp.title_en || comp.title || '';
+                    document.getElementById('ac-desc').textContent = comp.details_en || comp.details || 'No description provided.';
+                    this.textContent = 'View Original Language';
+                    this.setAttribute('data-is-orig', 'false');
+                }
+            };
+            const descEl = document.getElementById('ac-desc');
+            descEl.parentNode.insertBefore(transBtn, descEl.nextSibling);
+        }
+        transBtn.setAttribute('data-is-orig', 'false');
+        transBtn.textContent = 'View Original Language';
+        if (c.original_lang === 'en' || !c.title_en) {
+            transBtn.style.display = 'none';
+        } else {
+            transBtn.style.display = 'inline-block';
+        }
+        
+      document.getElementById('ac-address').textContent = `${c.address || ''} ${c.landmark ? '| Landmark: ' + c.landmark : ''} (${c.city || ''})`;
+      document.getElementById('ac-user').textContent = `${c.user_name || '-'} (${c.user_email || ''})`;
+      document.getElementById('ac-dates').innerHTML = `Filed: ${c.created_at || '-'}<br/>Assigned: ${c.assigned_at || 'Not Assigned'}`;
+      const deptSelect = document.getElementById('ac-dept');
+deptSelect.innerHTML = '<option value="">-- Unassigned --</option>';
+allDepts.forEach(d => {
+    if (d.is_approved == 1 || d.is_approved === true || d.id == c.department_id) {
+        const o = document.createElement('option');
+        o.value = d.id;
+        o.textContent = d.name;
+        deptSelect.appendChild(o);
+    }
+});
+
+      const statusSelect = document.getElementById('ac-status');
+const s2 = (c.status || '').toLowerCase();
+let val2 = c.status || 'Registered';
+if (s2.startsWith('task assigned')) val2 = 'Working';
+else if (s2 === 'active') val2 = 'Working';
+
+let exists2 = Array.from(statusSelect.options).some(opt => opt.value === val2);
+if (!exists2) {
+    const o = document.createElement('option'); o.value = val2; o.textContent = val2;
+    statusSelect.insertBefore(o, statusSelect.firstChild);
+}
+statusSelect.value = val2;
+      document.getElementById('ac-status-badge').innerHTML = statusBadge(c.status);
+      document.getElementById('ac-assigned-to').textContent = c.department_name || 'Unassigned';
+      document.getElementById('ac-dept').value = c.department_id || '';
+
+      const isResolved = (c.status || '').toLowerCase() === 'resolved';
+      document.getElementById('ac-update-section').style.display = isResolved ? 'none' : 'block';
+      document.getElementById('ac-btn-save').style.display = isResolved ? 'none' : 'inline-block';
+
+      deptSelect.onchange = () => {
+        const dId = deptSelect.value;
+        if (!dId) { document.getElementById('ac-note').value = ''; return; }
+        const dept = allDepts.find(x => x.id == dId);
+        const deptNameStr = dept ? `${dept.name} - ${dept.dept_id || 'Pending ID'}` : deptSelect.options[deptSelect.selectedIndex]?.text;
+        document.getElementById('ac-note').value = `Complaint ID ${c.id} assigned to ${deptNameStr} [by admin].`;
+      };
+
+      document.getElementById('ac-alert').style.display = 'none';
+      document.getElementById('admin-comp-modal').classList.add('open');
+
+      
+    const lat = c.latitude, lng = c.longitude;
+      document.getElementById('ac-lat').textContent = lat || '--';
+      document.getElementById('ac-lng').textContent = lng || '--';
+      const mapContainer = document.getElementById('ac-map-container');
+      const mapError = document.getElementById('ac-map-error');
+      if (lat && lng) {
+        mapContainer.style.display = 'block';
+        mapError.style.display = 'none';
+        if (!acMap) {
+          acMap = L.map('ac-map-container');
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: ' OpenStreetMap' }).addTo(acMap);
+          acMarker = L.marker([lat, lng]).addTo(acMap);
+        }
+        acMap.setView([lat, lng], 15);
+        acMarker.setLatLng([lat, lng]);
+        setTimeout(() => acMap.invalidateSize(), 300);
+      } else {
+        mapContainer.style.display = 'none';
+        mapError.style.display = 'block';
+      }
+
+      // Media
+      const mediaEl = document.getElementById('ac-media-list');
+      mediaEl.innerHTML = '<span style="color:var(--text-light);font-size:0.8rem;">Loading media...</span>';
+      try {
+        const rm = await fetch('/api/admin/complaint_media?complaint_id=' + c.id);
+        const dm = await rm.json();
+        if (dm.success && dm.media && dm.media.length > 0) {
+          window.currentMedia = dm.media;
+          mediaEl.innerHTML = dm.media.map((path, idx) => {
+            const url = '/' + path.replace(/\\/g, '/');
+            const isVid = url.match(/\.(mp4|mov|avi)$/i);
+            if (isVid) return `<video src="${url}" controls style="height:110px;border-radius:6px;border:1px solid var(--border);cursor:pointer;" onclick="openLightbox(${idx})"></video>`;
+            return `<img src="${url}" style="height:110px;border-radius:6px;border:1px solid var(--border);object-fit:cover;cursor:pointer;" onclick="openLightbox(${idx})" />`;
+          }).join('');
+        } else { mediaEl.innerHTML = '<span style="color:var(--text-light);font-size:0.8rem;">No media attached</span>'; }
+      } catch (e) { mediaEl.innerHTML = '<span style="color:var(--red);font-size:0.8rem;">Error loading media</span>'; }
+
+      // History
+      const histEl = document.getElementById('ac-history-list');
+      histEl.innerHTML = '<span style="color:var(--text-light);">Loading history...</span>';
+      try {
+        const rh = await fetch('/api/complaint_history?complaint_id=' + c.id);
+        const dh = await rh.json();
+        if (dh.success && dh.history && dh.history.length > 0) {
+          histEl.innerHTML = dh.history.map(h => `<div style="margin-bottom:0.6rem;border-left:2px solid var(--border);padding-left:0.72rem;">
+            <strong style="color:var(--text);">${h.status}</strong>
+            <span style="color:var(--text-light);font-size:0.7rem;margin-left:0.4rem;">${h.created_at}</span>
+            <div style="margin-top:0.18rem;font-size:0.78rem;">${esc(h.note || '')}</div>
+          </div>`).join('');
+        } else { histEl.innerHTML = '<span style="color:var(--text-light);">No history available.</span>'; }
+      } catch (e) { histEl.innerHTML = '<span style="color:var(--red);">Error loading history</span>'; }
+    }
+
+    function closeAdminCompModal() { document.getElementById('admin-comp-modal').classList.remove('open'); }
+
+    async function saveAdminComp() {
+      const id = document.getElementById('ac-hidden-id').value;
+      const status = document.getElementById('ac-status').value;
+      const deptId = document.getElementById('ac-dept').value;
+      let note = document.getElementById('ac-note')?.value.trim() || '';
+      if (!note) note = `Admin updated status to ${status}.`;
+      const alertEl = document.getElementById('ac-alert');
+      try {
+        const r = await fetch('/api/admin/complaints/update', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: parseInt(id), status, department_id: deptId ? parseInt(deptId) : null, note })
+        });
+        const d = await r.json();
+        if (d.success) { closeAdminCompModal(); toast('Complaint updated!', 'success'); loadComplaints(); }
+        else { alertEl.textContent = d.error || 'Failed to update'; alertEl.style.display = 'block'; }
+      } catch (e) { alertEl.textContent = 'Server error'; alertEl.style.display = 'block'; }
+    }
+
+    // 
+    //  DELETE CONFIRM
+    // 
+    function askDelete(type, id, name) {
+      pendingDelete = { type, id };
+      document.getElementById('confirm-msg').textContent = `Delete "${name}"? This cannot be undone.`;
+      document.getElementById('confirm-modal').classList.add('open');
+    }
+
+    function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); pendingDelete = null; }
+
+    async function confirmDelete() {
+      if (!pendingDelete) return;
+      const { type, id } = pendingDelete;
+      const urls = {
+        manager: '/api/admin/managers/delete',
+        department: '/api/admin/departments/delete',
+        user: '/api/admin/users/delete',
+        complaint: '/api/admin/complaints/delete'
+      };
+      closeConfirm();
+      try {
+        const r = await fetch(urls[type], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        const d = await r.json();
+        if (d.success) {
+          toast(`${type} deleted.`, 'success');
+          if (type === 'manager') { loadManagers(); }
+          else if (type === 'department') { loadDepartments(); }
+          else if (type === 'user') { loadUsers(); }
+          else if (type === 'complaint') {
+            loadComplaints();
+            if (currentDrawerEntity) loadDrawerComplaints(currentDrawerType, currentDrawerEntity);
+          }
+          loadDashboard();
+        } else { toast(d.error || 'Delete failed.', 'error'); }
+      } catch (e) { toast('Server error.', 'error'); }
+    }
+
+    // 
+    //  LIGHTBOX
+    // 
+    let currentLightboxIndex = 0;
+    function openLightbox(index) { currentLightboxIndex = index; renderLightbox(); document.getElementById('lightbox-modal').classList.add('open'); }
+    function closeLightbox() { document.getElementById('lightbox-modal').classList.remove('open'); document.getElementById('lightbox-content').innerHTML = ''; }
+    function prevLightbox() { if (window.currentMedia && currentLightboxIndex > 0) { currentLightboxIndex--; renderLightbox(); } }
+    function nextLightbox() { if (window.currentMedia && currentLightboxIndex < window.currentMedia.length - 1) { currentLightboxIndex++; renderLightbox(); } }
+    function renderLightbox() {
+      const path = window.currentMedia[currentLightboxIndex];
+      const url = '/' + path.replace(/\\/g, '/');
+      const isVid = url.match(/\.(mp4|mov|avi)$/i);
+      const container = document.getElementById('lightbox-content');
+      if (isVid) container.innerHTML = `<video src="${url}" controls autoplay style="max-width:100%;max-height:85vh;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.5);"></video>`;
+      else container.innerHTML = `<img src="${url}" style="max-width:100%;max-height:85vh;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.5);" />`;
+    }
+
+    // 
+    //  UTILITIES
+    // 
+    function statusBadge(status) {
+      const s = (status || '').toLowerCase();
+      if (s === 'registered') return `<span class="badge badge-registered">Registered</span>`;
+      if (s === 'working') return `<span class="badge badge-working">Working</span>`;
+      if (s === 'resolved') return `<span class="badge badge-resolved">Resolved</span>`;
+      if (s === 'return pending') return `<span class="badge badge-return">Return Pending</span>`;
+      if (s.startsWith('task assigned')) return `<span class="badge badge-assigned">Assigned</span>`;
+      return `<span class="badge">${esc(status)}</span>`;
+    }
+
+    function esc(str) {
+      if (!str && str !== 0) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function toast(msg, type = '') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = 'toast ' + type;
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    }
+
+    function openFooterModal(type) {
+      const modal = document.getElementById('footer-modal');
+      const title = document.getElementById('fm-title');
+      const content = document.getElementById('fm-content');
+      if (type === 'terms') {
+        title.textContent = 'Terms & Conditions';
+        content.innerHTML = '<h3 style="margin:1rem 0 0.5rem;font-weight:700;">1. Usage Policy</h3><p>This portal is intended solely for official municipal use. Unauthorized access is strictly prohibited.</p><h3 style="margin:1rem 0 0.5rem;font-weight:700;">2. Data Accuracy</h3><p>You are responsible for ensuring complaint status accurately reflects the real-world state.</p>';
+      } else if (type === 'privacy') {
+        title.textContent = 'Privacy Policy';
+        content.innerHTML = '<h3 style="margin:1rem 0 0.5rem;font-weight:700;">Data Handling</h3><p>All citizen data is strictly confidential. Do not share outside official channels.</p><h3 style="margin:1rem 0 0.5rem;font-weight:700;">Copyright</h3><p> 2026 Urbano. All rights reserved.</p>';
+      }
+      modal.classList.add('open');
+    }
+  </script>
+
+
+  </body>
+</html>
+
+
+
+
+
