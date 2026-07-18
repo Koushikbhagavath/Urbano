@@ -13,4 +13,4 @@ Urbano is a comprehensive platform for citizens to lodge civic complaints and fo
 1. Import the SQL database schema into your local MySQL server.
 2. Set up a Python virtual environment: python -m venv venv and install dependencies from app.py.
 3. Run the Flask server: python app.py (Default port: 8080).
-4. For the mobile app, navigate to urbano_mobile/, run lutter pub get, and deploy to a device or emulator.
+4. For the mobile app, navigate to urbano_mobile/, run flutter pub get, and deploy to a device or emulator.
